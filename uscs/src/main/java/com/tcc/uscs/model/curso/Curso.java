@@ -6,7 +6,7 @@ import jakarta.validation.Valid;
 import lombok.*;
 
 @Table(name = "cursos")
-@Entity(name = "cursos")
+@Entity(name = "Curso")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -25,29 +25,19 @@ public class Curso {
   private String anoVigente;
   private Boolean ativo;
 
-  public void atualizarCurso(@Valid AtualizarCursoDTO dados) {
-    if (dados.nome() != null) {
-      this.nome = dados.nome();
-    }
-    if (dados.descricao() != null) {
-      this.descricao = dados.descricao();
-    }
-    if (dados.periodo() != null) {
-      this.periodo = dados.periodo();
-    }
-    if (dados.duracao() != null) {
-      this.duracao = dados.duracao();
-    }
-    if (dados.anoVigente() != null) {
-      this.anoVigente = dados.anoVigente();
-    }
+  public void atualizar(@Valid AtualizarCursoDTO dados) {
+    if (dados.nome() != null) this.nome = dados.nome();
+    if (dados.descricao() != null) this.descricao = dados.descricao();
+    if (dados.periodo() != null) this.periodo = dados.periodo();
+    if (dados.duracao() != null) this.duracao = dados.duracao();
+    if (dados.anoVigente() != null) this.anoVigente = dados.anoVigente();
   }
 
-  public void excluirCurso() {
+  public void excluir() {
     this.ativo = false;
   }
 
-  public void reativarCurso() {
+  public void reativar() {
     this.ativo = true;
   }
 }

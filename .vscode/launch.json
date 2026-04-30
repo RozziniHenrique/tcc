@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-UscsApplication<uscs>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.tcc.uscs.UscsApplication",
+            "projectName": "uscs",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

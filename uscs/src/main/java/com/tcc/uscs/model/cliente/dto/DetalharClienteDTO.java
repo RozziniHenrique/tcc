@@ -7,7 +7,8 @@ public record DetalharClienteDTO(
   String nome,
   String email,
   String telefone,
-  String cpf
+  String cpf,
+  Boolean ativo
 ) {
   public DetalharClienteDTO(Cliente cliente) {
     this(
@@ -15,7 +16,8 @@ public record DetalharClienteDTO(
       cliente.getNome(),
       cliente.getEmail(),
       cliente.getTelefone(),
-      cliente.getCpf()
+      cliente.getCpf(),
+      cliente.getAtivo()
     );
   }
 }

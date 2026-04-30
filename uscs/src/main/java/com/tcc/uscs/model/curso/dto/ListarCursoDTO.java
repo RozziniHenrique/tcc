@@ -5,7 +5,6 @@ import com.tcc.uscs.model.curso.Curso;
 public record ListarCursoDTO(
   Long id,
   String nome,
-  String descricao,
   String periodo,
   String duracao,
   String anoVigente,
@@ -15,7 +14,6 @@ public record ListarCursoDTO(
     this(
       curso.getId(),
       curso.getNome(),
-      curso.getDescricao(),
       curso.getPeriodo(),
       curso.getDuracao(),
       curso.getAnoVigente(),

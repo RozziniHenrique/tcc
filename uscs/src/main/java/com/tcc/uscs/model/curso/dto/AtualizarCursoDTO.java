@@ -1,11 +1,12 @@
 package com.tcc.uscs.model.curso.dto;
 
+import jakarta.validation.constraints.NotNull;
+
 public record AtualizarCursoDTO(
-  Long id,
+  @NotNull Long id,
   String nome,
   String descricao,
   String periodo,
   String duracao,
-  String anoVigente,
-  Boolean ativo
+  String anoVigente
 ) {}
