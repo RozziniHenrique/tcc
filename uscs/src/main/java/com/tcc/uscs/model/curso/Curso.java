@@ -3,6 +3,7 @@ package com.tcc.uscs.model.curso;
 import com.tcc.uscs.model.curso.dto.AtualizarCursoDTO;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import lombok.*;
 
 @Table(name = "cursos")
@@ -23,6 +24,7 @@ public class Curso {
   private String periodo;
   private String duracao;
   private String anoVigente;
+  private BigDecimal valor;
   private Boolean ativo;
 
   public void atualizar(@Valid AtualizarCursoDTO dados) {
@@ -31,13 +33,6 @@ public class Curso {
     if (dados.periodo() != null) this.periodo = dados.periodo();
     if (dados.duracao() != null) this.duracao = dados.duracao();
     if (dados.anoVigente() != null) this.anoVigente = dados.anoVigente();
-  }
-
-  public void excluir() {
-    this.ativo = false;
-  }
-
-  public void reativar() {
-    this.ativo = true;
+    if (dados.valor() != null) this.valor = dados.valor();
   }
 }

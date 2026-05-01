@@ -1,6 +1,7 @@
 package com.tcc.uscs.model.curso.dto;
 
 import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 
 public record AtualizarCursoDTO(
   @NotNull Long id,
@@ -8,5 +9,6 @@ public record AtualizarCursoDTO(
   String descricao,
   String periodo,
   String duracao,
-  String anoVigente
+  String anoVigente,
+  BigDecimal valor
 ) {}

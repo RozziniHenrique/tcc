@@ -1,6 +1,7 @@
 package com.tcc.uscs.model.curso.dto;
 
 import com.tcc.uscs.model.curso.Curso;
+import java.math.BigDecimal;
 
 public record ListarCursoDTO(
   Long id,
@@ -8,6 +9,7 @@ public record ListarCursoDTO(
   String periodo,
   String duracao,
   String anoVigente,
+  BigDecimal valor,
   Boolean ativo
 ) {
   public ListarCursoDTO(Curso curso) {
@@ -17,6 +19,7 @@ public record ListarCursoDTO(
       curso.getPeriodo(),
       curso.getDuracao(),
       curso.getAnoVigente(),
+      curso.getValor(),
       curso.getAtivo()
     );
   }
