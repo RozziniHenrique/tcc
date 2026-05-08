@@ -10,6 +10,11 @@ public record ListarFuncionarioDTO(
   Funcao funcao
 ) {
   public ListarFuncionarioDTO(Funcionario f) {
-    this(f.getId(), f.getNome(), f.getEmail(), f.getFuncao());
+    this(
+      f.getId(),
+      f.getUsuario().getNome(),
+      f.getUsuario().getEmail(),
+      f.getFuncao()
+    );
   }
 }

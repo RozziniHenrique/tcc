@@ -7,7 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AlunoRepository extends JpaRepository<Aluno, Long> {
-  Page<Aluno> findAllByAtivoTrue(Pageable paginacao);
+  Page<Aluno> findAllByUsuarioAtivoTrue(Pageable paginacao);
 
-  List<Aluno> findAllByCursoIdAndAtivoTrue(Long idCurso);
+  List<Aluno> findAllByCursoIdAndUsuarioAtivoTrue(Long idCurso);
 }

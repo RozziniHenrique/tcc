@@ -1,15 +1,14 @@
 package com.tcc.uscs.controller;
 
-import com.tcc.uscs.model.cliente.*;
 import com.tcc.uscs.model.cliente.dto.*;
 import com.tcc.uscs.repository.ClienteRepository;
+import com.tcc.uscs.service.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -18,30 +17,30 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class ClienteController {
 
   @Autowired
+  private ClienteService service;
+
+  @Autowired
   private ClienteRepository repository;
 
   @PostMapping
-  @Transactional
   public ResponseEntity cadastrar(
     @RequestBody @Valid CadastrarClienteDTO dados,
     UriComponentsBuilder uriBuilder
   ) {
-    var cliente = new Cliente(dados);
-    repository.save(cliente);
-
+    var detalhe = service.cadastrar(dados);
     var uri = uriBuilder
       .path("/clientes/{id}")
-      .buildAndExpand(cliente.getId())
+      .buildAndExpand(detalhe.id())
       .toUri();
-    return ResponseEntity.created(uri).body(new DetalharClienteDTO(cliente));
+    return ResponseEntity.created(uri).body(detalhe);
   }
 
   @GetMapping
   public ResponseEntity<Page<ListarClienteDTO>> listar(
-    @PageableDefault(size = 10, sort = { "nome" }) Pageable paginacao
+    @PageableDefault(size = 10, sort = { "usuario.nome" }) Pageable paginacao
   ) {
     var page = repository
-      .findAllByAtivoTrue(paginacao)
+      .findAllByUsuarioAtivoTrue(paginacao)
       .map(ListarClienteDTO::new);
     return ResponseEntity.ok(page);
   }
@@ -53,20 +52,16 @@ public class ClienteController {
   }
 
   @PutMapping
-  @Transactional
   public ResponseEntity atualizar(
     @RequestBody @Valid AtualizarClienteDTO dados
   ) {
-    var cliente = repository.getReferenceById(dados.id());
-    cliente.atualizar(dados);
-    return ResponseEntity.ok(new DetalharClienteDTO(cliente));
+    var detalhe = service.atualizar(dados);
+    return ResponseEntity.ok(detalhe);
   }
 
   @DeleteMapping("/{id}")
-  @Transactional
   public ResponseEntity excluir(@PathVariable Long id) {
-    var cliente = repository.getReferenceById(id);
-    cliente.excluir();
+    service.excluir(id);
     return ResponseEntity.noContent().build();
   }
 }

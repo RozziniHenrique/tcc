@@ -16,13 +16,13 @@ public record DetalharFuncionarioDTO(
   public DetalharFuncionarioDTO(Funcionario f) {
     this(
       f.getId(),
-      f.getNome(),
-      f.getEmail(),
-      f.getTelefone(),
-      f.getCpf(),
-      f.getEndereco(),
+      f.getUsuario().getNome(),
+      f.getUsuario().getEmail(),
+      f.getUsuario().getTelefone(),
+      f.getUsuario().getCpf(),
+      f.getUsuario().getEnderecoCompleto(),
       f.getFuncao(),
-      f.getAtivo()
+      f.getUsuario().getAtivo()
     );
   }
 }

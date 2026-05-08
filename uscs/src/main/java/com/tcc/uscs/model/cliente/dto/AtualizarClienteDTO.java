@@ -6,6 +6,7 @@ public record AtualizarClienteDTO(
   @NotNull Long id,
   String nome,
   String email,
-  String senha,
-  String telefone
+  String telefone,
+  String endereco,
+  String observacoes
 ) {}

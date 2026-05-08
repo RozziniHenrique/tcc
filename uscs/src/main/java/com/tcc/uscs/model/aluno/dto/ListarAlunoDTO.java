@@ -11,8 +11,8 @@ public record ListarAlunoDTO(
   public ListarAlunoDTO(Aluno aluno) {
     this(
       aluno.getId(),
-      aluno.getNome(),
-      aluno.getEmail(),
+      aluno.getUsuario().getNome(),
+      aluno.getUsuario().getEmail(),
       aluno.getCurso().getNome()
     );
   }

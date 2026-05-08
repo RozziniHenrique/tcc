@@ -12,10 +12,10 @@ public record ListarClienteDTO(
   public ListarClienteDTO(Cliente cliente) {
     this(
       cliente.getId(),
-      cliente.getNome(),
-      cliente.getEmail(),
-      cliente.getTelefone(),
-      cliente.getAtivo()
+      cliente.getUsuario().getNome(),
+      cliente.getUsuario().getEmail(),
+      cliente.getUsuario().getTelefone(),
+      cliente.getUsuario().getAtivo()
     );
   }
 }

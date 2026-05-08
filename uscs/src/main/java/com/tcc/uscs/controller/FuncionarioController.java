@@ -1,9 +1,8 @@
 package com.tcc.uscs.controller;
 
-import com.tcc.uscs.model.funcionario.Funcionario;
 import com.tcc.uscs.model.funcionario.dto.*;
 import com.tcc.uscs.repository.FuncionarioRepository;
-import jakarta.transaction.Transactional;
+import com.tcc.uscs.service.FuncionarioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,50 +17,51 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class FuncionarioController {
 
   @Autowired
+  private FuncionarioService service;
+
+  @Autowired
   private FuncionarioRepository repository;
 
   @PostMapping
-  @Transactional
   public ResponseEntity cadastrar(
     @RequestBody @Valid CadastrarFuncionarioDTO dados,
     UriComponentsBuilder uriBuilder
   ) {
-    var funcionario = new Funcionario(dados);
-    repository.save(funcionario);
+    var detalhe = service.cadastrar(dados);
     var uri = uriBuilder
       .path("/funcionarios/{id}")
-      .buildAndExpand(funcionario.getId())
+      .buildAndExpand(detalhe.id())
       .toUri();
-    return ResponseEntity.created(uri).body(
-      new DetalharFuncionarioDTO(funcionario)
-    );
+    return ResponseEntity.created(uri).body(detalhe);
   }
 
   @GetMapping
   public ResponseEntity<Page<ListarFuncionarioDTO>> listar(
-    @PageableDefault(size = 10) Pageable paginacao
+    @PageableDefault(size = 10, sort = { "usuario.nome" }) Pageable paginacao
   ) {
     var page = repository
-      .findAllByAtivoTrue(paginacao)
+      .findAllByUsuarioAtivoTrue(paginacao)
       .map(ListarFuncionarioDTO::new);
     return ResponseEntity.ok(page);
   }
 
-  @PutMapping
-  @Transactional
-  public ResponseEntity atualizar(
-    @RequestBody @Valid AtualizarFuncionarioDTO dados
-  ) {
-    var funcionario = repository.getReferenceById(dados.id());
-    funcionario.atualizar(dados);
+  @GetMapping("/{id}")
+  public ResponseEntity detalhar(@PathVariable Long id) {
+    var funcionario = repository.getReferenceById(id);
     return ResponseEntity.ok(new DetalharFuncionarioDTO(funcionario));
   }
 
+  @PutMapping
+  public ResponseEntity atualizar(
+    @RequestBody @Valid AtualizarFuncionarioDTO dados
+  ) {
+    var detalhe = service.atualizar(dados);
+    return ResponseEntity.ok(detalhe);
+  }
+
   @DeleteMapping("/{id}")
-  @Transactional
   public ResponseEntity excluir(@PathVariable Long id) {
-    var funcionario = repository.getReferenceById(id);
-    funcionario.excluir();
+    service.excluir(id);
     return ResponseEntity.noContent().build();
   }
 }

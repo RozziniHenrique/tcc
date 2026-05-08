@@ -15,8 +15,8 @@ public record DetalharAgendamentoDTO(
   public DetalharAgendamentoDTO(Agendamento a) {
     this(
       a.getId(),
-      a.getCliente().getNome(),
-      a.getAluno().getNome(),
+      a.getCliente().getUsuario().getNome(),
+      a.getAluno().getUsuario().getNome(),
       a.getCurso().getNome(),
       a.getDataHora(),
       a.getValorNoAto()

@@ -7,5 +7,7 @@ public record CadastrarClienteDTO(
   @NotBlank @Email String email,
   @NotBlank @Size(min = 6) String senha,
   @NotBlank String telefone,
-  @NotBlank @Pattern(regexp = "\\d{11}") String cpf
+  @NotBlank @Pattern(regexp = "\\d{11}") String cpf,
+  @NotBlank String endereco,
+  String observacoes
 ) {}

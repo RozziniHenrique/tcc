@@ -1,16 +1,14 @@
 package com.tcc.uscs.controller;
 
-import com.tcc.uscs.model.aluno.*;
 import com.tcc.uscs.model.aluno.dto.*;
 import com.tcc.uscs.repository.AlunoRepository;
-import com.tcc.uscs.repository.CursoRepository;
+import com.tcc.uscs.service.AlunoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -19,34 +17,30 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class AlunoController {
 
   @Autowired
-  private AlunoRepository repository;
+  private AlunoService service;
 
   @Autowired
-  private CursoRepository cursoRepository;
+  private AlunoRepository repository;
 
   @PostMapping
-  @Transactional
   public ResponseEntity cadastrar(
     @RequestBody @Valid CadastrarAlunoDTO dados,
     UriComponentsBuilder uriBuilder
   ) {
-    var curso = cursoRepository.getReferenceById(dados.idCurso());
-    var aluno = new Aluno(dados, curso);
-    repository.save(aluno);
-
+    var detalhe = service.cadastrar(dados);
     var uri = uriBuilder
       .path("/alunos/{id}")
-      .buildAndExpand(aluno.getId())
+      .buildAndExpand(detalhe.id())
       .toUri();
-    return ResponseEntity.created(uri).body(new DetalharAlunoDTO(aluno));
+    return ResponseEntity.created(uri).body(detalhe);
   }
 
   @GetMapping
   public ResponseEntity<Page<ListarAlunoDTO>> listar(
-    @PageableDefault(size = 10, sort = { "nome" }) Pageable paginacao
+    @PageableDefault(size = 10, sort = { "usuario.nome" }) Pageable paginacao
   ) {
     var page = repository
-      .findAllByAtivoTrue(paginacao)
+      .findAllByUsuarioAtivoTrue(paginacao)
       .map(ListarAlunoDTO::new);
     return ResponseEntity.ok(page);
   }
@@ -58,18 +52,14 @@ public class AlunoController {
   }
 
   @PutMapping
-  @Transactional
   public ResponseEntity atualizar(@RequestBody @Valid AtualizarAlunoDTO dados) {
-    var aluno = repository.getReferenceById(dados.id());
-    aluno.atualizar(dados);
-    return ResponseEntity.ok(new DetalharAlunoDTO(aluno));
+    var detalhe = service.atualizar(dados);
+    return ResponseEntity.ok(detalhe);
   }
 
   @DeleteMapping("/{id}")
-  @Transactional
   public ResponseEntity excluir(@PathVariable Long id) {
-    var aluno = repository.getReferenceById(id);
-    aluno.excluir();
+    service.excluir(id);
     return ResponseEntity.noContent().build();
   }
 }

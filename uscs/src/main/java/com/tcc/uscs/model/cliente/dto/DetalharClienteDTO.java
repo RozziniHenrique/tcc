@@ -13,11 +13,11 @@ public record DetalharClienteDTO(
   public DetalharClienteDTO(Cliente cliente) {
     this(
       cliente.getId(),
-      cliente.getNome(),
-      cliente.getEmail(),
-      cliente.getTelefone(),
-      cliente.getCpf(),
-      cliente.getAtivo()
+      cliente.getUsuario().getNome(),
+      cliente.getUsuario().getEmail(),
+      cliente.getUsuario().getTelefone(),
+      cliente.getUsuario().getCpf(),
+      cliente.getUsuario().getAtivo()
     );
   }
 }

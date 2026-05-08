@@ -3,10 +3,7 @@ package com.tcc.uscs.service;
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.DetalharAgendamentoDTO;
-import com.tcc.uscs.repository.AgendamentoRepository;
-import com.tcc.uscs.repository.AlunoRepository;
-import com.tcc.uscs.repository.ClienteRepository;
-import com.tcc.uscs.repository.CursoRepository;
+import com.tcc.uscs.repository.*;
 import jakarta.transaction.Transactional;
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -30,30 +27,30 @@ public class AgendamentoService {
   @Autowired
   private CursoRepository cursoRepository;
 
+  @Transactional
   public DetalharAgendamentoDTO agendar(CadastrarAgendamentoDTO dados) {
     // 1. Validações de Existência
     if (!clienteRepository.existsById(dados.idCliente())) {
-      throw new RuntimeException("Id do cliente informado não existe!");
+      throw new RuntimeException("Cliente não encontrado ou inativo!");
     }
 
-    // 2. Smart Booking: Se não informar aluno, busca um aleatório do curso
     Long idAluno = dados.idAluno();
     if (idAluno == null) {
       idAluno = buscarAlunoAleatorio(dados.idCurso());
     } else if (!alunoRepository.existsById(idAluno)) {
-      throw new RuntimeException("Id do aluno informado não existe!");
+      throw new RuntimeException("Aluno não encontrado ou inativo!");
     }
 
     var cliente = clienteRepository.getReferenceById(dados.idCliente());
     var aluno = alunoRepository.getReferenceById(idAluno);
     var curso = cursoRepository.getReferenceById(dados.idCurso());
 
-    // 3. Validações de Regra de Negócio
+    // 2. Regras de Negócio
     validarHorarioAntecedencia(dados.dataHora());
     validarHorarioComercial(dados.dataHora());
     validarConflitoHorario(idAluno, dados.idCliente(), dados.dataHora());
 
-    // 4. Persistência com Valor no Ato
+    // 3. Persistência
     var agendamento = new Agendamento(cliente, aluno, curso, dados.dataHora());
     agendamento.setValorNoAto(curso.getValor());
     repository.save(agendamento);
@@ -62,23 +59,17 @@ public class AgendamentoService {
   }
 
   private void validarHorarioAntecedencia(LocalDateTime data) {
-    var agora = LocalDateTime.now();
-    var diferencaEmMinutos = Duration.between(agora, data).toMinutes();
-    if (diferencaEmMinutos < 30) {
-      throw new RuntimeException(
-        "Agendamento deve ter antecedência mínima de 30 minutos."
-      );
+    if (Duration.between(LocalDateTime.now(), data).toMinutes() < 30) {
+      throw new RuntimeException("Antecedência mínima de 30 minutos exigida.");
     }
   }
 
   private void validarHorarioComercial(LocalDateTime data) {
     var domingo = data.getDayOfWeek().equals(DayOfWeek.SUNDAY);
-    var antesDaAbertura = data.getHour() < 8;
-    var depoisDoFechamento = data.getHour() > 18;
-
-    if (domingo || antesDaAbertura || depoisDoFechamento) {
+    var foraHorario = data.getHour() < 8 || data.getHour() > 18;
+    if (domingo || foraHorario) {
       throw new RuntimeException(
-        "Agendamento fora do horário comercial (Seg-Sáb, 08:00 às 19:00)."
+        "Fora do horário comercial (Seg-Sáb, 08h-19h)."
       );
     }
   }
@@ -88,60 +79,43 @@ public class AgendamentoService {
     Long idCliente,
     LocalDateTime data
   ) {
-    var alunoOcupado = repository.existsByAlunoIdAndDataHoraAndAtivoTrue(
-      idAluno,
-      data
-    );
-    if (alunoOcupado) {
+    if (repository.existsByAlunoIdAndDataHoraAndAtivoTrue(idAluno, data)) {
       throw new RuntimeException(
-        "O aluno já possui um agendamento nesse horário!"
+        "O aluno já possui agendamento neste horário."
       );
     }
-
-    var clienteOcupado = repository.existsByClienteIdAndDataHoraAndAtivoTrue(
-      idCliente,
-      data
-    );
-    if (clienteOcupado) {
+    if (repository.existsByClienteIdAndDataHoraAndAtivoTrue(idCliente, data)) {
       throw new RuntimeException(
-        "O cliente já possui um agendamento nesse horário!"
+        "O cliente já possui agendamento neste horário."
       );
     }
   }
 
   private Long buscarAlunoAleatorio(Long idCurso) {
-    var alunosDisponiveis = alunoRepository.findAllByCursoIdAndAtivoTrue(
+    var disponiveis = alunoRepository.findAllByCursoIdAndUsuarioAtivoTrue(
       idCurso
     );
-    if (alunosDisponiveis.isEmpty()) {
-      throw new RuntimeException("Não há alunos disponíveis para este curso.");
+    if (disponiveis.isEmpty()) {
+      throw new RuntimeException("Nenhum aluno disponível para este curso.");
     }
-    return alunosDisponiveis
-      .get(new Random().nextInt(alunosDisponiveis.size()))
-      .getId();
+    return disponiveis.get(new Random().nextInt(disponiveis.size())).getId();
   }
 
   @Transactional
   public void cancelar(Long id, String justificativa) {
     var agendamento = repository.getReferenceById(id);
-    var agora = LocalDateTime.now();
-    var diferencaEmHoras = Duration.between(
-      agora,
-      agendamento.getDataHora()
-    ).toHours();
-
-    if (diferencaEmHoras < 24) {
-      throw new RuntimeException(
-        "Cancelamento apenas com 24h de antecedência!"
-      );
+    if (
+      Duration.between(
+        LocalDateTime.now(),
+        agendamento.getDataHora()
+      ).toHours() <
+      24
+    ) {
+      throw new RuntimeException("Cancelamento exige 24h de antecedência.");
     }
-
     if (justificativa == null || justificativa.isBlank()) {
-      throw new RuntimeException(
-        "Justificativa obrigatória para cancelamento."
-      );
+      throw new RuntimeException("Justificativa é obrigatória.");
     }
-
-    agendamento.cancelar(); // Soft Delete
+    agendamento.cancelar();
   }
 }

@@ -7,7 +7,6 @@ public record AtualizarFuncionarioDTO(
   @NotNull Long id,
   String nome,
   String email,
-  String senha,
   String telefone,
   String endereco,
   Funcao funcao

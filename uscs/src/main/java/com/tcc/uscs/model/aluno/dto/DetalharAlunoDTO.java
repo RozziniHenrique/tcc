@@ -15,11 +15,11 @@ public record DetalharAlunoDTO(
   public DetalharAlunoDTO(Aluno aluno) {
     this(
       aluno.getId(),
-      aluno.getNome(),
-      aluno.getEmail(),
-      aluno.getTelefone(),
-      aluno.getCpf(),
-      aluno.getEndereco(),
+      aluno.getUsuario().getNome(),
+      aluno.getUsuario().getEmail(),
+      aluno.getUsuario().getTelefone(),
+      aluno.getUsuario().getCpf(),
+      aluno.getUsuario().getEnderecoCompleto(),
       aluno.getCurso() != null ? new DetalharCursoDTO(aluno.getCurso()) : null
     );
   }

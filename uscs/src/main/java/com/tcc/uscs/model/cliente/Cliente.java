@@ -1,9 +1,8 @@
 package com.tcc.uscs.model.cliente;
 
 import com.tcc.uscs.model.cliente.dto.AtualizarClienteDTO;
-import com.tcc.uscs.model.cliente.dto.CadastrarClienteDTO;
+import com.tcc.uscs.model.usuario.Usuario;
 import jakarta.persistence.*;
-import jakarta.validation.Valid;
 import lombok.*;
 
 @Table(name = "clientes")
@@ -16,37 +15,34 @@ import lombok.*;
 public class Cliente {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  private String nome;
-  private String email;
-  private String senha;
-  private String telefone;
-  private String cpf;
-  private Boolean ativo;
+  @OneToOne
+  @MapsId
+  @JoinColumn(name = "id")
+  private Usuario usuario;
 
-  public Cliente(CadastrarClienteDTO dados) {
-    this.ativo = true;
-    this.nome = dados.nome();
-    this.email = dados.email();
-    this.senha = dados.senha();
-    this.telefone = dados.telefone();
-    this.cpf = dados.cpf();
+  private String observacoes;
+
+  public Cliente(Usuario usuario, String observacoes) {
+    this.usuario = usuario;
+    this.observacoes = observacoes;
   }
 
-  public void atualizar(@Valid AtualizarClienteDTO dados) {
-    if (dados.nome() != null) this.nome = dados.nome();
-    if (dados.email() != null) this.email = dados.email();
-    if (dados.senha() != null) this.senha = dados.senha();
-    if (dados.telefone() != null) this.telefone = dados.telefone();
+  public void atualizar(AtualizarClienteDTO dados) {
+    this.usuario.atualizarInformacoes(
+      dados.nome(),
+      dados.email(),
+      dados.telefone(),
+      dados.endereco()
+    );
+
+    if (dados.observacoes() != null) {
+      this.observacoes = dados.observacoes();
+    }
   }
 
   public void excluir() {
-    this.ativo = false;
-  }
-
-  public void reativar() {
-    this.ativo = true;
+    this.usuario.desativar();
   }
 }
