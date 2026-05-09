@@ -1,9 +1,0 @@
-{
-    "java.configuration.updateBuildConfiguration": "interactive",
-    "java.compile.nullAnalysis.mode": "automatic",
-
-    "[java]": {
-        "editor.defaultFormatter": "RudraPatel.prettier-plugin-java-vscode",
-        "editor.formatOnSave": true
-    }
-}
