@@ -1,7 +1,6 @@
 package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.aluno.dto.*;
-import com.tcc.uscs.repository.AlunoRepository;
 import com.tcc.uscs.service.AlunoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +17,6 @@ public class AlunoController {
 
   @Autowired
   private AlunoService service;
-
-  @Autowired
-  private AlunoRepository repository;
 
   @PostMapping
   public ResponseEntity cadastrar(
@@ -39,22 +35,20 @@ public class AlunoController {
   public ResponseEntity<Page<ListarAlunoDTO>> listar(
     @PageableDefault(size = 10, sort = { "usuario.nome" }) Pageable paginacao
   ) {
-    var page = repository
-      .findAllByUsuarioAtivoTrue(paginacao)
-      .map(ListarAlunoDTO::new);
-    return ResponseEntity.ok(page);
+    return ResponseEntity.ok(service.listar(paginacao));
   }
 
   @GetMapping("/{id}")
   public ResponseEntity detalhar(@PathVariable Long id) {
-    var aluno = repository.getReferenceById(id);
-    return ResponseEntity.ok(new DetalharAlunoDTO(aluno));
+    return ResponseEntity.ok(service.detalhar(id));
   }
 
-  @PutMapping
-  public ResponseEntity atualizar(@RequestBody @Valid AtualizarAlunoDTO dados) {
-    var detalhe = service.atualizar(dados);
-    return ResponseEntity.ok(detalhe);
+  @PutMapping("/{id}")
+  public ResponseEntity atualizar(
+    @PathVariable Long id,
+    @RequestBody @Valid AtualizarAlunoDTO dados
+  ) {
+    return ResponseEntity.ok(service.atualizar(dados));
   }
 
   @DeleteMapping("/{id}")

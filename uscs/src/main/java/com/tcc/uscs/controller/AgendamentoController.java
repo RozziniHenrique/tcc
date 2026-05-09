@@ -2,7 +2,6 @@ package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.service.AgendamentoService;
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("agendamentos")
@@ -21,16 +21,19 @@ public class AgendamentoController {
   private AgendamentoService service;
 
   @PostMapping
-  @Transactional
   public ResponseEntity agendar(
-    @RequestBody @Valid CadastrarAgendamentoDTO dados
+    @RequestBody @Valid CadastrarAgendamentoDTO dados,
+    UriComponentsBuilder uriBuilder
   ) {
     var detalhamento = service.agendar(dados);
-    return ResponseEntity.ok(detalhamento);
+    var uri = uriBuilder
+      .path("/agendamentos/{id}")
+      .buildAndExpand(detalhamento.id())
+      .toUri();
+    return ResponseEntity.created(uri).body(detalhamento);
   }
 
   @DeleteMapping("/{id}")
-  @Transactional
   public ResponseEntity cancelar(
     @PathVariable Long id,
     @RequestBody String justificativa

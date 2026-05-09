@@ -1,7 +1,8 @@
 package com.tcc.uscs.controller;
 
-import com.tcc.uscs.model.funcionario.dto.*;
-import com.tcc.uscs.repository.FuncionarioRepository;
+import com.tcc.uscs.model.funcionario.dto.AtualizarFuncionarioDTO;
+import com.tcc.uscs.model.funcionario.dto.CadastrarFuncionarioDTO;
+import com.tcc.uscs.model.funcionario.dto.ListarFuncionarioDTO;
 import com.tcc.uscs.service.FuncionarioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +10,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
@@ -18,9 +26,6 @@ public class FuncionarioController {
 
   @Autowired
   private FuncionarioService service;
-
-  @Autowired
-  private FuncionarioRepository repository;
 
   @PostMapping
   public ResponseEntity cadastrar(
@@ -39,24 +44,20 @@ public class FuncionarioController {
   public ResponseEntity<Page<ListarFuncionarioDTO>> listar(
     @PageableDefault(size = 10, sort = { "usuario.nome" }) Pageable paginacao
   ) {
-    var page = repository
-      .findAllByUsuarioAtivoTrue(paginacao)
-      .map(ListarFuncionarioDTO::new);
-    return ResponseEntity.ok(page);
+    return ResponseEntity.ok(service.listar(paginacao));
   }
 
   @GetMapping("/{id}")
   public ResponseEntity detalhar(@PathVariable Long id) {
-    var funcionario = repository.getReferenceById(id);
-    return ResponseEntity.ok(new DetalharFuncionarioDTO(funcionario));
+    return ResponseEntity.ok(service.detalhar(id));
   }
 
-  @PutMapping
+  @PutMapping("/{id}")
   public ResponseEntity atualizar(
+    @PathVariable Long id,
     @RequestBody @Valid AtualizarFuncionarioDTO dados
   ) {
-    var detalhe = service.atualizar(dados);
-    return ResponseEntity.ok(detalhe);
+    return ResponseEntity.ok(service.atualizar(dados));
   }
 
   @DeleteMapping("/{id}")

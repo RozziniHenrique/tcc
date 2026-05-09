@@ -13,7 +13,7 @@ public record ListarAlunoDTO(
       aluno.getId(),
       aluno.getUsuario().getNome(),
       aluno.getUsuario().getEmail(),
-      aluno.getCurso().getNome()
+      aluno.getCurso() != null ? aluno.getCurso().getNome() : "Não matriculado"
     );
   }
 }

@@ -1,7 +1,6 @@
 package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.cliente.dto.*;
-import com.tcc.uscs.repository.ClienteRepository;
 import com.tcc.uscs.service.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +17,6 @@ public class ClienteController {
 
   @Autowired
   private ClienteService service;
-
-  @Autowired
-  private ClienteRepository repository;
 
   @PostMapping
   public ResponseEntity cadastrar(
@@ -39,24 +35,20 @@ public class ClienteController {
   public ResponseEntity<Page<ListarClienteDTO>> listar(
     @PageableDefault(size = 10, sort = { "usuario.nome" }) Pageable paginacao
   ) {
-    var page = repository
-      .findAllByUsuarioAtivoTrue(paginacao)
-      .map(ListarClienteDTO::new);
-    return ResponseEntity.ok(page);
+    return ResponseEntity.ok(service.listar(paginacao));
   }
 
   @GetMapping("/{id}")
   public ResponseEntity detalhar(@PathVariable Long id) {
-    var cliente = repository.getReferenceById(id);
-    return ResponseEntity.ok(new DetalharClienteDTO(cliente));
+    return ResponseEntity.ok(service.detalhar(id));
   }
 
-  @PutMapping
+  @PutMapping("/{id}")
   public ResponseEntity atualizar(
+    @PathVariable Long id,
     @RequestBody @Valid AtualizarClienteDTO dados
   ) {
-    var detalhe = service.atualizar(dados);
-    return ResponseEntity.ok(detalhe);
+    return ResponseEntity.ok(service.atualizar(dados));
   }
 
   @DeleteMapping("/{id}")

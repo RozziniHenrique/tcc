@@ -8,6 +8,9 @@ import com.tcc.uscs.repository.FuncionarioRepository;
 import com.tcc.uscs.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,23 +22,34 @@ public class FuncionarioService {
   @Autowired
   private UsuarioRepository usuarioRepository;
 
+  @Autowired
+  private PasswordEncoder passwordEncoder;
+
   @Transactional
   public DetalharFuncionarioDTO cadastrar(CadastrarFuncionarioDTO dados) {
     var usuario = new Usuario(
       dados.nome(),
       dados.cpf(),
       dados.email(),
-      dados.senha(),
+      passwordEncoder.encode(dados.senha()),
       dados.endereco(),
       dados.telefone(),
       TipoUsuario.FUNCIONARIO
     );
     usuarioRepository.save(usuario);
-
     var funcionario = new Funcionario(usuario, dados.funcao());
     repository.save(funcionario);
-
     return new DetalharFuncionarioDTO(funcionario);
+  }
+
+  public Page<ListarFuncionarioDTO> listar(Pageable paginacao) {
+    return repository
+      .findAllByUsuarioAtivoTrue(paginacao)
+      .map(ListarFuncionarioDTO::new);
+  }
+
+  public DetalharFuncionarioDTO detalhar(Long id) {
+    return new DetalharFuncionarioDTO(repository.getReferenceById(id));
   }
 
   @Transactional
@@ -47,7 +61,6 @@ public class FuncionarioService {
 
   @Transactional
   public void excluir(Long id) {
-    var funcionario = repository.getReferenceById(id);
-    funcionario.excluir();
+    repository.getReferenceById(id).excluir();
   }
 }

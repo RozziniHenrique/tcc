@@ -1,6 +1,26 @@
-target/
-!.vscode/
+# Compilados
+/target/
+/bin/
+*.class
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.settings/
+.classpath
+.project
+
+# Maven
 .mvn/
 mvnw
 mvnw.cmd
-HELP.md
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
