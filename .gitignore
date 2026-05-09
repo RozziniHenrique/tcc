@@ -1,0 +1,32 @@
+# --- Compilados ---
+**/target/
+**/bin/
+*.class
+
+# --- IDEs ---
+.idea/
+.vscode/
+**/launch.json
+**/settings.json
+*.iml
+*.ipr
+*.iws
+.settings/
+.classpath
+.project
+
+# --- Maven ---
+.mvn/
+mvnw
+mvnw.cmd
+
+# --- Sistema ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+
+# --- Variáveis de ambiente (Segurança) ---
+.env
+.env.*
