@@ -1,5 +1,6 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.DetalharAgendamentoDTO;
@@ -31,14 +32,14 @@ public class AgendamentoService {
   public DetalharAgendamentoDTO agendar(CadastrarAgendamentoDTO dados) {
     // 1. Validações de Existência
     if (!clienteRepository.existsById(dados.idCliente())) {
-      throw new RuntimeException("Cliente não encontrado ou inativo!");
+      throw new ValidacaoException("Cliente não encontrado ou inativo!");
     }
 
     Long idAluno = dados.idAluno();
     if (idAluno == null) {
       idAluno = buscarAlunoAleatorio(dados.idCurso());
     } else if (!alunoRepository.existsById(idAluno)) {
-      throw new RuntimeException("Aluno não encontrado ou inativo!");
+      throw new ValidacaoException("Aluno não encontrado ou inativo!");
     }
 
     var cliente = clienteRepository.getReferenceById(dados.idCliente());
@@ -60,7 +61,9 @@ public class AgendamentoService {
 
   private void validarHorarioAntecedencia(LocalDateTime data) {
     if (Duration.between(LocalDateTime.now(), data).toMinutes() < 30) {
-      throw new RuntimeException("Antecedência mínima de 30 minutos exigida.");
+      throw new ValidacaoException(
+        "Antecedência mínima de 30 minutos exigida."
+      );
     }
   }
 
@@ -68,7 +71,7 @@ public class AgendamentoService {
     var domingo = data.getDayOfWeek().equals(DayOfWeek.SUNDAY);
     var foraHorario = data.getHour() < 8 || data.getHour() > 18;
     if (domingo || foraHorario) {
-      throw new RuntimeException(
+      throw new ValidacaoException(
         "Fora do horário comercial (Seg-Sáb, 08h-19h)."
       );
     }
@@ -80,12 +83,12 @@ public class AgendamentoService {
     LocalDateTime data
   ) {
     if (repository.existsByAlunoIdAndDataHoraAndAtivoTrue(idAluno, data)) {
-      throw new RuntimeException(
+      throw new ValidacaoException(
         "O aluno já possui agendamento neste horário."
       );
     }
     if (repository.existsByClienteIdAndDataHoraAndAtivoTrue(idCliente, data)) {
-      throw new RuntimeException(
+      throw new ValidacaoException(
         "O cliente já possui agendamento neste horário."
       );
     }
@@ -96,7 +99,7 @@ public class AgendamentoService {
       idCurso
     );
     if (disponiveis.isEmpty()) {
-      throw new RuntimeException("Nenhum aluno disponível para este curso.");
+      throw new ValidacaoException("Nenhum aluno disponível para este curso.");
     }
     return disponiveis.get(new Random().nextInt(disponiveis.size())).getId();
   }
@@ -111,10 +114,10 @@ public class AgendamentoService {
       ).toHours() <
       24
     ) {
-      throw new RuntimeException("Cancelamento exige 24h de antecedência.");
+      throw new ValidacaoException("Cancelamento exige 24h de antecedência.");
     }
     if (justificativa == null || justificativa.isBlank()) {
-      throw new RuntimeException("Justificativa é obrigatória.");
+      throw new ValidacaoException("Justificativa é obrigatória.");
     }
     agendamento.cancelar();
   }
