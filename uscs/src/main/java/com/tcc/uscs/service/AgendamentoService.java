@@ -8,7 +8,6 @@ import com.tcc.uscs.repository.*;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
