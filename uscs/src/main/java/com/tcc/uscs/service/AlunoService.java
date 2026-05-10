@@ -5,27 +5,24 @@ import com.tcc.uscs.model.aluno.dto.*;
 import com.tcc.uscs.model.usuario.TipoUsuario;
 import com.tcc.uscs.model.usuario.Usuario;
 import com.tcc.uscs.repository.*;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor
 @Service
 public class AlunoService {
 
-  @Autowired
-  private AlunoRepository repository;
+  private final AlunoRepository repository;
 
-  @Autowired
-  private UsuarioRepository usuarioRepository;
+  private final UsuarioRepository usuarioRepository;
 
-  @Autowired
-  private CursoRepository cursoRepository;
+  private final CursoRepository cursoRepository;
 
-  @Autowired
-  private PasswordEncoder passwordEncoder;
+  private final PasswordEncoder passwordEncoder;
 
   @Transactional
   public DetalharAlunoDTO cadastrar(CadastrarAlunoDTO dados) {

@@ -3,17 +3,17 @@ package com.tcc.uscs.service;
 import com.tcc.uscs.model.curso.Curso;
 import com.tcc.uscs.model.curso.dto.*;
 import com.tcc.uscs.repository.CursoRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor
 @Service
 public class CursoService {
 
-  @Autowired
-  private CursoRepository repository;
+  private final CursoRepository repository;
 
   @Transactional
   public DetalharCursoDTO cadastrar(CadastrarCursoDTO dados) {

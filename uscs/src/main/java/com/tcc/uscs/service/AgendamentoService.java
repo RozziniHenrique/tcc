@@ -5,28 +5,26 @@ import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.DetalharAgendamentoDTO;
 import com.tcc.uscs.repository.*;
-import jakarta.transaction.Transactional;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Random;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.concurrent.ThreadLocalRandom;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor
 @Service
 public class AgendamentoService {
 
-  @Autowired
-  private AgendamentoRepository repository;
+  private final AgendamentoRepository repository;
 
-  @Autowired
-  private ClienteRepository clienteRepository;
+  private final ClienteRepository clienteRepository;
 
-  @Autowired
-  private AlunoRepository alunoRepository;
+  private final AlunoRepository alunoRepository;
 
-  @Autowired
-  private CursoRepository cursoRepository;
+  private final CursoRepository cursoRepository;
 
   @Transactional
   public DetalharAgendamentoDTO agendar(CadastrarAgendamentoDTO dados) {
@@ -98,10 +96,14 @@ public class AgendamentoService {
     var disponiveis = alunoRepository.findAllByCursoIdAndUsuarioAtivoTrue(
       idCurso
     );
+
     if (disponiveis.isEmpty()) {
       throw new ValidacaoException("Nenhum aluno disponível para este curso.");
     }
-    return disponiveis.get(new Random().nextInt(disponiveis.size())).getId();
+    int indiceAleatorio = ThreadLocalRandom.current().nextInt(
+      disponiveis.size()
+    );
+    return disponiveis.get(indiceAleatorio).getId();
   }
 
   @Transactional

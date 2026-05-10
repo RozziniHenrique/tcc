@@ -3,7 +3,7 @@ package com.tcc.uscs.controller;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.service.AgendamentoService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("agendamentos")
 public class AgendamentoController {
 
-  @Autowired
-  private AgendamentoService service;
+  private final AgendamentoService service;
 
   @PostMapping
   public ResponseEntity agendar(

@@ -6,24 +6,22 @@ import com.tcc.uscs.model.usuario.TipoUsuario;
 import com.tcc.uscs.model.usuario.Usuario;
 import com.tcc.uscs.repository.ClienteRepository;
 import com.tcc.uscs.repository.UsuarioRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@RequiredArgsConstructor
 @Service
 public class ClienteService {
 
-  @Autowired
-  private ClienteRepository repository;
+  private final ClienteRepository repository;
 
-  @Autowired
-  private UsuarioRepository usuarioRepository;
+  private final UsuarioRepository usuarioRepository;
 
-  @Autowired
-  private PasswordEncoder passwordEncoder;
+  private final PasswordEncoder passwordEncoder;
 
   @Transactional
   public DetalharClienteDTO cadastrar(CadastrarClienteDTO dados) {

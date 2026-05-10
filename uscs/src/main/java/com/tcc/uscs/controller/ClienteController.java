@@ -3,7 +3,7 @@ package com.tcc.uscs.controller;
 import com.tcc.uscs.model.cliente.dto.*;
 import com.tcc.uscs.service.ClienteService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -11,12 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("clientes")
 public class ClienteController {
 
-  @Autowired
-  private ClienteService service;
+  private final ClienteService service;
 
   @PostMapping
   public ResponseEntity cadastrar(

@@ -1,6 +1,8 @@
 package com.tcc.uscs.infra.exception;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +13,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class TratadorDeErros {
+
+  private static final Logger log = LoggerFactory.getLogger(
+    TratadorDeErros.class
+  );
 
   // 1. Erro 404
   @ExceptionHandler(EntityNotFoundException.class)
@@ -54,12 +60,15 @@ public class TratadorDeErros {
   // 5. Erro 500
   @ExceptionHandler(Exception.class)
   public ResponseEntity tratarErro500(Exception ex) {
+    log.error("Erro interno detectado: ", ex);
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-      new DadosErroMensagem(
-        "Erro interno do servidor: " + ex.getLocalizedMessage()
+      new DadosErro500(
+        "Erro interno do servidor. Por favor, tente novamente mais tarde."
       )
     );
   }
+
+  private record DadosErro500(String mensagem) {}
 
   private record DadosErroValidacao(String campo, String mensagem) {
     public DadosErroValidacao(FieldError erro) {

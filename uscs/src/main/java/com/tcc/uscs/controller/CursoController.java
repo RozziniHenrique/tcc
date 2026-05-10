@@ -5,7 +5,7 @@ import com.tcc.uscs.model.curso.dto.CadastrarCursoDTO;
 import com.tcc.uscs.model.curso.dto.ListarCursoDTO;
 import com.tcc.uscs.service.CursoService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -20,12 +20,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("cursos")
 public class CursoController {
 
-  @Autowired
-  private CursoService service;
+  private final CursoService service;
 
   @PostMapping
   public ResponseEntity cadastrar(
