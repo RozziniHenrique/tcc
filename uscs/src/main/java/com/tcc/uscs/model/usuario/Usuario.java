@@ -1,7 +1,13 @@
 package com.tcc.uscs.model.usuario;
 
+import com.tcc.uscs.model.usuario.dto.DadosCadastroUsuario;
 import jakarta.persistence.*;
+import java.util.Collection;
+import java.util.List;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Table(name = "usuarios")
 @Entity(name = "Usuario")
@@ -10,7 +16,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-public class Usuario {
+public class Usuario implements UserDetails {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,25 +33,20 @@ public class Usuario {
   private String senha;
   private String enderecoCompleto;
   private String telefone;
+
+  @Enumerated(EnumType.STRING)
   private TipoUsuario tipoUsuario;
+
   private Boolean ativo;
 
-  public Usuario(
-    String nome,
-    String cpf,
-    String email,
-    String senha,
-    String endereco,
-    String telefone,
-    TipoUsuario tipo
-  ) {
-    this.nome = nome;
-    this.email = email;
-    this.senha = senha;
-    this.cpf = cpf;
-    this.enderecoCompleto = endereco;
-    this.telefone = telefone;
-    this.tipoUsuario = tipo;
+  public Usuario(DadosCadastroUsuario dados, String senhaCriptografada) {
+    this.nome = dados.nome();
+    this.cpf = dados.cpf();
+    this.email = dados.email();
+    this.senha = senhaCriptografada;
+    this.enderecoCompleto = dados.enderecoCompleto();
+    this.telefone = dados.telefone();
+    this.tipoUsuario = dados.tipoUsuario();
     this.ativo = true;
   }
 
@@ -67,5 +68,40 @@ public class Usuario {
 
   public void reativar() {
     this.ativo = true;
+  }
+
+  @Override
+  public Collection<? extends GrantedAuthority> getAuthorities() {
+    return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+  }
+
+  @Override
+  public String getPassword() {
+    return senha;
+  }
+
+  @Override
+  public String getUsername() {
+    return email;
+  }
+
+  @Override
+  public boolean isAccountNonExpired() {
+    return true;
+  }
+
+  @Override
+  public boolean isAccountNonLocked() {
+    return true;
+  }
+
+  @Override
+  public boolean isCredentialsNonExpired() {
+    return true;
+  }
+
+  @Override
+  public boolean isEnabled() {
+    return ativo;
   }
 }
