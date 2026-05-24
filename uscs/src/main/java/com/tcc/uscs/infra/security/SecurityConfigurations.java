@@ -30,8 +30,27 @@ public class SecurityConfigurations {
         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
       )
       .authorizeHttpRequests(req -> {
+        // Rotas Públicas
         req.requestMatchers(HttpMethod.POST, "/login").permitAll();
         req.requestMatchers(HttpMethod.POST, "/usuarios").permitAll();
+
+        // Gestão de Cursos e Funcionários
+        req.requestMatchers("/cursos/**").hasRole("FUNCIONARIO");
+        req.requestMatchers("/funcionarios/**").hasRole("FUNCIONARIO");
+
+        // Gestão de Clientes e Alunos
+        req
+          .requestMatchers(HttpMethod.GET, "/clientes/**", "/alunos/**")
+          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+        req
+          .requestMatchers("/clientes/**", "/alunos/**")
+          .hasRole("FUNCIONARIO");
+
+        // Agendamentos
+        req
+          .requestMatchers("/agendamentos/**")
+          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+
         req.anyRequest().authenticated();
       })
       .addFilterBefore(

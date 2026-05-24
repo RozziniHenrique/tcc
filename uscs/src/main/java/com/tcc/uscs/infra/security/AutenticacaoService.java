@@ -1,17 +1,17 @@
 package com.tcc.uscs.infra.security;
 
 import com.tcc.uscs.repository.UsuarioRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+@RequiredArgsConstructor
 @Service
 public class AutenticacaoService implements UserDetailsService {
 
-  @Autowired
-  private UsuarioRepository repository;
+  private final UsuarioRepository repository;
 
   @Override
   public UserDetails loadUserByUsername(String username)

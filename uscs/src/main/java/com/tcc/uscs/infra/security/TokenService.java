@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.tcc.uscs.infra.exception.TokenInvalidoException;
 import com.tcc.uscs.model.usuario.Usuario;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -28,7 +29,7 @@ public class TokenService {
         .withExpiresAt(dataExpiracao())
         .sign(algoritmo);
     } catch (JWTCreationException exception) {
-      throw new RuntimeException("Erro ao gerar token JWT", exception);
+      throw new TokenInvalidoException("Erro ao gerar token JWT");
     }
   }
 
@@ -41,7 +42,7 @@ public class TokenService {
         .verify(tokenJWT)
         .getSubject();
     } catch (JWTVerificationException exception) {
-      throw new RuntimeException("Token JWT inválido ou expirado!");
+      throw new TokenInvalidoException("Token JWT inválido ou expirado!");
     }
   }
 
