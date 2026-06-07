@@ -9,6 +9,7 @@ public record DetalharAgendamentoDTO(
   String nomeCliente,
   String nomeAluno,
   String nomeCurso,
+  String nomeUnidade,
   LocalDateTime dataHora,
   BigDecimal valorNoAto
 ) {
@@ -18,6 +19,7 @@ public record DetalharAgendamentoDTO(
       a.getCliente().getUsuario().getNome(),
       a.getAluno().getUsuario().getNome(),
       a.getCurso().getNome(),
+      a.getUnidade() != null ? a.getUnidade().getNome() : "Não informada",
       a.getDataHora(),
       a.getValorNoAto()
     );

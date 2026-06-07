@@ -9,6 +9,7 @@ public record ListarAgendamentoDTO(
   String nomeCliente,
   String nomeAluno,
   String nomeCurso,
+  String nomeUnidade,
   LocalDateTime dataHora,
   BigDecimal valorNoAto,
   Boolean ativo
@@ -19,6 +20,7 @@ public record ListarAgendamentoDTO(
       a.getCliente().getUsuario().getNome(),
       a.getAluno().getUsuario().getNome(),
       a.getCurso().getNome(),
+      a.getUnidade() != null ? a.getUnidade().getNome() : "Não informada",
       a.getDataHora(),
       a.getValorNoAto(),
       a.getAtivo()

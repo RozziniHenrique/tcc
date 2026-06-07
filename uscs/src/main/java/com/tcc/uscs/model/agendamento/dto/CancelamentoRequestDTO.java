@@ -1,3 +1,7 @@
 package com.tcc.uscs.model.agendamento.dto;
 
-public record CancelamentoRequestDTO(String justificativa) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record CancelamentoRequestDTO(
+  @NotBlank(message = "A justificativa é obrigatória.") String justificativa
+) {}

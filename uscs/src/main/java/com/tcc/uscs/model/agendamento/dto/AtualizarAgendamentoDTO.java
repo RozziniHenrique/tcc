@@ -9,6 +9,7 @@ public record AtualizarAgendamentoDTO(
   Long idCliente,
   Long idAluno,
   Long idCurso,
+  Long idUnidade,
   @Future LocalDateTime dataHora,
   BigDecimal valorNoAto
 ) {}
