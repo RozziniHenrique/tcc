@@ -1,6 +1,7 @@
 package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
+import com.tcc.uscs.model.agendamento.dto.CancelamentoRequestDTO;
 import com.tcc.uscs.service.AgendamentoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,9 +37,9 @@ public class AgendamentoController {
   @DeleteMapping("/{id}")
   public ResponseEntity cancelar(
     @PathVariable Long id,
-    @RequestBody String justificativa
+    @RequestBody @Valid CancelamentoRequestDTO dto
   ) {
-    service.cancelar(id, justificativa);
+    service.cancelar(id, dto.justificativa());
     return ResponseEntity.noContent().build();
   }
 }

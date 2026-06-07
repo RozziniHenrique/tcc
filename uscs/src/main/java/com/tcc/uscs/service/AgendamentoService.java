@@ -108,6 +108,7 @@ public class AgendamentoService {
   @Transactional
   public void cancelar(Long id, String justificativa) {
     var agendamento = repository.getReferenceById(id);
+
     if (
       Duration.between(
         LocalDateTime.now(),
@@ -117,9 +118,11 @@ public class AgendamentoService {
     ) {
       throw new ValidacaoException("Cancelamento exige 24h de antecedência.");
     }
+
     if (justificativa == null || justificativa.isBlank()) {
       throw new ValidacaoException("Justificativa é obrigatória.");
     }
-    agendamento.cancelar();
+
+    agendamento.cancelar(justificativa);
   }
 }

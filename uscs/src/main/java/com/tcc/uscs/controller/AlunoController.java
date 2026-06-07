@@ -19,7 +19,7 @@ public class AlunoController {
   private final AlunoService service;
 
   @PostMapping
-  public ResponseEntity cadastrar(
+  public ResponseEntity<DetalharAlunoDTO> cadastrar(
     @RequestBody @Valid CadastrarAlunoDTO dados,
     UriComponentsBuilder uriBuilder
   ) {
@@ -39,12 +39,12 @@ public class AlunoController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity detalhar(@PathVariable Long id) {
+  public ResponseEntity<DetalharAlunoDTO> detalhar(@PathVariable Long id) {
     return ResponseEntity.ok(service.detalhar(id));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity atualizar(
+  public ResponseEntity<DetalharAlunoDTO> atualizar(
     @PathVariable Long id,
     @RequestBody @Valid AtualizarAlunoDTO dados
   ) {
@@ -52,7 +52,7 @@ public class AlunoController {
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity excluir(@PathVariable Long id) {
+  public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();
   }

@@ -1,8 +1,6 @@
 package com.tcc.uscs.controller;
 
-import com.tcc.uscs.model.funcionario.dto.AtualizarFuncionarioDTO;
-import com.tcc.uscs.model.funcionario.dto.CadastrarFuncionarioDTO;
-import com.tcc.uscs.model.funcionario.dto.ListarFuncionarioDTO;
+import com.tcc.uscs.model.funcionario.dto.*;
 import com.tcc.uscs.service.FuncionarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,14 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @RequiredArgsConstructor
@@ -28,7 +19,7 @@ public class FuncionarioController {
   private final FuncionarioService service;
 
   @PostMapping
-  public ResponseEntity cadastrar(
+  public ResponseEntity<DetalharFuncionarioDTO> cadastrar(
     @RequestBody @Valid CadastrarFuncionarioDTO dados,
     UriComponentsBuilder uriBuilder
   ) {
@@ -48,12 +39,14 @@ public class FuncionarioController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity detalhar(@PathVariable Long id) {
+  public ResponseEntity<DetalharFuncionarioDTO> detalhar(
+    @PathVariable Long id
+  ) {
     return ResponseEntity.ok(service.detalhar(id));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity atualizar(
+  public ResponseEntity<DetalharFuncionarioDTO> atualizar(
     @PathVariable Long id,
     @RequestBody @Valid AtualizarFuncionarioDTO dados
   ) {
@@ -61,7 +54,7 @@ public class FuncionarioController {
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity excluir(@PathVariable Long id) {
+  public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();
   }

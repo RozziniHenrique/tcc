@@ -1,10 +1,10 @@
 package com.tcc.uscs.service;
 
-import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.aluno.dto.*;
-import com.tcc.uscs.model.usuario.TipoUsuario;
-import com.tcc.uscs.model.usuario.Usuario;
-import com.tcc.uscs.repository.*;
+import com.tcc.uscs.repository.AlunoRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.ParameterMode;
+import jakarta.persistence.StoredProcedureQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,29 +17,70 @@ import org.springframework.transaction.annotation.Transactional;
 public class AlunoService {
 
   private final AlunoRepository repository;
-
-  private final UsuarioRepository usuarioRepository;
-
-  private final CursoRepository cursoRepository;
-
+  private final EntityManager entityManager;
   private final PasswordEncoder passwordEncoder;
 
   @Transactional
   public DetalharAlunoDTO cadastrar(CadastrarAlunoDTO dados) {
-    var curso = cursoRepository.getReferenceById(dados.idCurso());
-    var usuario = new Usuario(
-      dados.nome(),
-      dados.cpf(),
-      dados.email(),
-      passwordEncoder.encode(dados.senha()),
-      dados.endereco(),
-      dados.telefone(),
-      TipoUsuario.ALUNO
+    String senhaCriptografada = passwordEncoder.encode(dados.senha());
+
+    StoredProcedureQuery query = entityManager.createStoredProcedureQuery(
+      "sp_cadastrar_usuario_aluno"
     );
-    usuarioRepository.save(usuario);
-    var aluno = new Aluno(usuario, curso);
-    repository.save(aluno);
-    return new DetalharAlunoDTO(aluno);
+
+    query.registerStoredProcedureParameter(
+      "p_nome",
+      String.class,
+      ParameterMode.IN
+    );
+    query.registerStoredProcedureParameter(
+      "p_cpf",
+      String.class,
+      ParameterMode.IN
+    );
+    query.registerStoredProcedureParameter(
+      "p_email",
+      String.class,
+      ParameterMode.IN
+    );
+    query.registerStoredProcedureParameter(
+      "p_senha",
+      String.class,
+      ParameterMode.IN
+    );
+    query.registerStoredProcedureParameter(
+      "p_endereco",
+      String.class,
+      ParameterMode.IN
+    );
+    query.registerStoredProcedureParameter(
+      "p_telefone",
+      String.class,
+      ParameterMode.IN
+    );
+    query.registerStoredProcedureParameter(
+      "p_curso_id",
+      Long.class,
+      ParameterMode.IN
+    );
+    query.registerStoredProcedureParameter(
+      "p_id",
+      Long.class,
+      ParameterMode.OUT
+    );
+
+    query.setParameter("p_nome", dados.nome());
+    query.setParameter("p_cpf", dados.cpf());
+    query.setParameter("p_email", dados.email());
+    query.setParameter("p_senha", senhaCriptografada);
+    query.setParameter("p_endereco", dados.endereco());
+    query.setParameter("p_telefone", dados.telefone());
+    query.setParameter("p_curso_id", dados.idCurso());
+
+    query.execute();
+    Long idGerado = (Long) query.getOutputParameterValue("p_id");
+
+    return new DetalharAlunoDTO(repository.getReferenceById(idGerado));
   }
 
   public Page<ListarAlunoDTO> listar(Pageable paginacao) {

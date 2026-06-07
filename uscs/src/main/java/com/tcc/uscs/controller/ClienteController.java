@@ -19,7 +19,7 @@ public class ClienteController {
   private final ClienteService service;
 
   @PostMapping
-  public ResponseEntity cadastrar(
+  public ResponseEntity<DetalharClienteDTO> cadastrar(
     @RequestBody @Valid CadastrarClienteDTO dados,
     UriComponentsBuilder uriBuilder
   ) {
@@ -39,12 +39,12 @@ public class ClienteController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity detalhar(@PathVariable Long id) {
+  public ResponseEntity<DetalharClienteDTO> detalhar(@PathVariable Long id) {
     return ResponseEntity.ok(service.detalhar(id));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity atualizar(
+  public ResponseEntity<DetalharClienteDTO> atualizar(
     @PathVariable Long id,
     @RequestBody @Valid AtualizarClienteDTO dados
   ) {
@@ -52,7 +52,7 @@ public class ClienteController {
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity excluir(@PathVariable Long id) {
+  public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();
   }

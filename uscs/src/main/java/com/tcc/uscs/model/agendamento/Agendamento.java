@@ -37,6 +37,9 @@ public class Agendamento {
   private BigDecimal valorNoAto; //Salva o preço atual no momento do agendamento
   private Boolean ativo;
 
+  @Column(name = "justificativa_cancelamento")
+  private String justificativaCancelamento;
+
   public Agendamento(
     Cliente cliente,
     Aluno aluno,
@@ -50,7 +53,8 @@ public class Agendamento {
     this.ativo = true;
   }
 
-  public void cancelar() {
+  public void cancelar(String justificativa) {
     this.ativo = false;
+    this.justificativaCancelamento = justificativa;
   }
 }
