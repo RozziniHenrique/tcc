@@ -1,15 +1,16 @@
 package com.tcc.uscs.service;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
-import com.tcc.uscs.model.agendamento.Agendamento;
-import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
-import com.tcc.uscs.model.agendamento.dto.DetalharAgendamentoDTO;
+import com.tcc.uscs.model.agendamento.*;
+import com.tcc.uscs.model.agendamento.dto.*;
 import com.tcc.uscs.repository.*;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,16 +19,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class AgendamentoService {
 
   private final AgendamentoRepository repository;
-
   private final ClienteRepository clienteRepository;
-
   private final AlunoRepository alunoRepository;
-
   private final CursoRepository cursoRepository;
+
+  public Page<ListarAgendamentoDTO> listar(Pageable paginacao) {
+    return repository.findAll(paginacao).map(ListarAgendamentoDTO::new);
+  }
+
+  public DetalharAgendamentoDTO detalhar(Long id) {
+    return new DetalharAgendamentoDTO(repository.getReferenceById(id));
+  }
 
   @Transactional
   public DetalharAgendamentoDTO agendar(CadastrarAgendamentoDTO dados) {
-    // 1. Validações de Existência
     if (!clienteRepository.existsById(dados.idCliente())) {
       throw new ValidacaoException("Cliente não encontrado ou inativo!");
     }
@@ -43,12 +48,10 @@ public class AgendamentoService {
     var aluno = alunoRepository.getReferenceById(idAluno);
     var curso = cursoRepository.getReferenceById(dados.idCurso());
 
-    // 2. Regras de Negócio
     validarHorarioAntecedencia(dados.dataHora());
     validarHorarioComercial(dados.dataHora());
     validarConflitoHorario(idAluno, dados.idCliente(), dados.dataHora());
 
-    // 3. Persistência
     var agendamento = new Agendamento(cliente, aluno, curso, dados.dataHora());
     agendamento.setValorNoAto(curso.getValor());
     repository.save(agendamento);

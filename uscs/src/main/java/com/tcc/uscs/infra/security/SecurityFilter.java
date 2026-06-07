@@ -1,5 +1,6 @@
 package com.tcc.uscs.infra.security;
 
+import com.tcc.uscs.infra.exception.TokenInvalidoException;
 import com.tcc.uscs.repository.UsuarioRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -7,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -28,20 +31,29 @@ public class SecurityFilter extends OncePerRequestFilter {
     var tokenJWT = recuperarToken(request);
 
     if (tokenJWT != null) {
-      var subject = tokenService.getSubject(tokenJWT);
+      try {
+        var subject = tokenService.getSubject(tokenJWT);
 
-      if (subject != null) {
-        var usuario = repository.findByEmail(subject);
-        if (usuario != null) {
-          var authentication = new UsernamePasswordAuthenticationToken(
-            usuario,
-            null,
-            usuario.getAuthorities()
-          );
-          SecurityContextHolder.getContext().setAuthentication(authentication);
-        } else {
-          SecurityContextHolder.clearContext();
+        if (subject != null) {
+          var usuario = repository.findByEmail(subject);
+          if (usuario != null) {
+            var authentication = new UsernamePasswordAuthenticationToken(
+              usuario,
+              null,
+              usuario.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(
+              authentication
+            );
+          } else {
+            SecurityContextHolder.clearContext();
+          }
         }
+      } catch (TokenInvalidoException ex) {
+        SecurityContextHolder.clearContext();
+
+        estilizarRespostaErro(response, ex.getMessage());
+        return;
       }
     }
 
@@ -58,5 +70,22 @@ public class SecurityFilter extends OncePerRequestFilter {
     }
 
     return null;
+  }
+
+  private void estilizarRespostaErro(
+    HttpServletResponse response,
+    String mensagem
+  ) throws IOException {
+    response.setStatus(HttpStatus.UNAUTHORIZED.value());
+    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    response.setCharacterEncoding("UTF-8");
+
+    String jsonPayload = String.format(
+      "{\n  \"status\": %d,\n  \"erro\": \"Unauthorized\",\n  \"mensagem\": \"%s\"\n}",
+      HttpStatus.UNAUTHORIZED.value(),
+      mensagem
+    );
+
+    response.getWriter().write(jsonPayload);
   }
 }

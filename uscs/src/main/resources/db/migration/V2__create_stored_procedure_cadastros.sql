@@ -1,7 +1,8 @@
--- Procedure para CLIENTE
+-- SP cadastrar CLIENTE
 CREATE PROCEDURE sp_cadastrar_usuario_cliente(
     IN p_nome VARCHAR(255), IN p_cpf VARCHAR(11), IN p_email VARCHAR(100), 
     IN p_senha VARCHAR(255), IN p_endereco VARCHAR(255), IN p_telefone VARCHAR(20),
+    IN p_observacoes TEXT,
     OUT p_id BIGINT
 )
 BEGIN
@@ -17,13 +18,14 @@ BEGIN
     
     SET p_id = LAST_INSERT_ID();
     
-    INSERT INTO clientes (id, observacoes) VALUES (p_id, NULL);
+    INSERT INTO clientes (id, observacoes) VALUES (p_id, p_observacoes);
 END;
 
--- Procedure para FUNCIONARIO
+-- SP cadastrar FUNCIONARIO
 CREATE PROCEDURE sp_cadastrar_usuario_funcionario(
     IN p_nome VARCHAR(255), IN p_cpf VARCHAR(11), IN p_email VARCHAR(100), 
     IN p_senha VARCHAR(255), IN p_endereco VARCHAR(255), IN p_telefone VARCHAR(20),
+    IN p_funcao VARCHAR(100),
     OUT p_id BIGINT
 )
 BEGIN
@@ -39,13 +41,14 @@ BEGIN
     
     SET p_id = LAST_INSERT_ID();
     
-    INSERT INTO funcionarios (id, funcao) VALUES (p_id, 'NÃO DEFINIDA');
+    INSERT INTO funcionarios (id, funcao) VALUES (p_id, p_funcao);
 END;
 
--- Procedure para ALUNO
+-- SP cadastrar ALUNO
 CREATE PROCEDURE sp_cadastrar_usuario_aluno(
     IN p_nome VARCHAR(255), IN p_cpf VARCHAR(11), IN p_email VARCHAR(100), 
     IN p_senha VARCHAR(255), IN p_endereco VARCHAR(255), IN p_telefone VARCHAR(20),
+    IN p_curso_id BIGINT,
     OUT p_id BIGINT
 )
 BEGIN
@@ -61,5 +64,5 @@ BEGIN
     
     SET p_id = LAST_INSERT_ID();
     
-    INSERT INTO alunos (id, curso_id) VALUES (p_id, NULL);
+    INSERT INTO alunos (id, curso_id) VALUES (p_id, p_curso_id);
 END;

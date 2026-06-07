@@ -33,8 +33,13 @@ public class Agendamento {
   @JoinColumn(name = "curso_id")
   private Curso curso;
 
+  @Column(name = "data_hora")
   private LocalDateTime dataHora;
+
+  @Column(name = "valor_no_ato")
   private BigDecimal valorNoAto; //Salva o preço atual no momento do agendamento
+
+  @Column(name = "ativo")
   private Boolean ativo;
 
   @Column(name = "justificativa_cancelamento")

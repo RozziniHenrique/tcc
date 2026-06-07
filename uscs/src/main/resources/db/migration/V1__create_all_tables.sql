@@ -8,7 +8,7 @@ CREATE TABLE usuarios (
     endereco_completo VARCHAR(255),
     telefone VARCHAR(20),
     tipo_usuario VARCHAR(50) NOT NULL,
-    ativo TINYINT NOT NULL,
+    ativo BIT(1) NOT NULL,
     
     PRIMARY KEY (id)
 );
@@ -22,7 +22,7 @@ CREATE TABLE cursos (
     duracao VARCHAR(50),
     ano_vigente VARCHAR(10),
     valor DECIMAL(10,2) NOT NULL,
-    ativo TINYINT NOT NULL,
+    ativo BIT(1) NOT NULL,
     
     PRIMARY KEY (id)
 );
@@ -63,7 +63,7 @@ CREATE TABLE agendamentos (
     curso_id BIGINT NOT NULL,
     data_hora DATETIME NOT NULL,
     valor_no_ato DECIMAL(10,2) NOT NULL,
-    ativo TINYINT NOT NULL,
+    ativo BIT(1) NOT NULL,
     
     PRIMARY KEY (id),
     CONSTRAINT fk_agendamentos_cliente FOREIGN KEY (cliente_id) REFERENCES clientes(id),
