@@ -31,8 +31,8 @@ public class UnidadeService {
   }
 
   @Transactional
-  public DetalharUnidadeDTO atualizar(AtualizarUnidadeDTO dados) {
-    var unidade = repository.getReferenceById(dados.id());
+  public DetalharUnidadeDTO atualizar(Long id, AtualizarUnidadeDTO dados) {
+    var unidade = repository.getReferenceById(id);
     unidade.atualizar(dados);
     return new DetalharUnidadeDTO(unidade);
   }

@@ -1,5 +1,6 @@
 package com.tcc.uscs.infra.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tcc.uscs.infra.exception.TokenInvalidoException;
 import com.tcc.uscs.repository.UsuarioRepository;
 import jakarta.servlet.FilterChain;
@@ -7,9 +8,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -74,18 +75,20 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private void estilizarRespostaErro(
     HttpServletResponse response,
-    String mensagem
+    String mensagemExcecao
   ) throws IOException {
-    response.setStatus(HttpStatus.UNAUTHORIZED.value());
-    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-    response.setCharacterEncoding("UTF-8");
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setContentType("application/json;charset=UTF-8");
 
-    String jsonPayload = String.format(
-      "{\n  \"status\": %d,\n  \"erro\": \"Unauthorized\",\n  \"mensagem\": \"%s\"\n}",
-      HttpStatus.UNAUTHORIZED.value(),
-      mensagem
-    );
+    Map<String, Object> erroJson = new HashMap<>();
+    erroJson.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+    erroJson.put("erro", "Unauthorized");
+    erroJson.put("mensagem", mensagemExcecao);
+    erroJson.put("timestamp", System.currentTimeMillis());
 
-    response.getWriter().write(jsonPayload);
+    ObjectMapper mapper = new ObjectMapper();
+    String jsonString = mapper.writeValueAsString(erroJson);
+
+    response.getWriter().write(jsonString);
   }
 }

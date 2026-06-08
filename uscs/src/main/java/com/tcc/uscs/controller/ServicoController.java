@@ -43,11 +43,12 @@ public class ServicoController {
     return ResponseEntity.ok(service.detalhar(id));
   }
 
-  @PutMapping
+  @PutMapping("/{id}")
   public ResponseEntity<DetalharServicoDTO> atualizar(
+    @PathVariable Long id,
     @RequestBody @Valid AtualizarServicoDTO dados
   ) {
-    return ResponseEntity.ok(service.atualizar(dados));
+    return ResponseEntity.ok(service.atualizar(id, dados));
   }
 
   @DeleteMapping("/{id}")

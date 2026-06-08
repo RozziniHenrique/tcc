@@ -43,11 +43,12 @@ public class UnidadeController {
     return ResponseEntity.ok(service.detalhar(id));
   }
 
-  @PutMapping
+  @PutMapping("/{id}")
   public ResponseEntity<DetalharUnidadeDTO> atualizar(
+    @PathVariable Long id,
     @RequestBody @Valid AtualizarUnidadeDTO dados
   ) {
-    return ResponseEntity.ok(service.atualizar(dados));
+    return ResponseEntity.ok(service.atualizar(id, dados));
   }
 
   @DeleteMapping("/{id}")

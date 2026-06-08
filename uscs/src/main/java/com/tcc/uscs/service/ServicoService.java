@@ -31,8 +31,8 @@ public class ServicoService {
   }
 
   @Transactional
-  public DetalharServicoDTO atualizar(AtualizarServicoDTO dados) {
-    var servico = repository.getReferenceById(dados.id());
+  public DetalharServicoDTO atualizar(Long id, AtualizarServicoDTO dados) {
+    var servico = repository.getReferenceById(id);
     servico.atualizar(dados);
     return new DetalharServicoDTO(servico);
   }
