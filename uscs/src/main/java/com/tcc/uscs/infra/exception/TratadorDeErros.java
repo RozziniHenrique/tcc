@@ -1,6 +1,7 @@
 package com.tcc.uscs.infra.exception;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.PersistenceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -33,20 +34,38 @@ public class TratadorDeErros {
     );
   }
 
-  // 3. Erro 400 -> Dados Duplicados
+  // 3. Erro 400 -> Dados Duplicados Validação Aplicação
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity tratarErroDuplicidade(
     DataIntegrityViolationException ex
   ) {
-    var mensagem = "Erro de integridade de dados.";
+    return ResponseEntity.badRequest().body(
+      new DadosErroMensagem(extrairMensagemDeDuplicidade(ex.getMessage()))
+    );
+  }
 
-    if (ex.getMessage().contains("cpf")) {
-      mensagem = "Já existe um usuário cadastrado com este CPF.";
-    } else if (ex.getMessage().contains("email")) {
-      mensagem = "Já existe um usuário cadastrado com este e-mail.";
+  // 3.1. Erro 400 -> Dados Duplicados Validação Stored Procedure
+  @ExceptionHandler(PersistenceException.class)
+  public ResponseEntity tratarErroProcedureDuplicidade(
+    PersistenceException ex
+  ) {
+    var causaRaiz =
+      ex.getCause() != null ? ex.getCause().getMessage() : ex.getMessage();
+
+    if (
+      causaRaiz.toLowerCase().contains("cpf") ||
+      causaRaiz.toLowerCase().contains("email") ||
+      causaRaiz.contains("1062")
+    ) {
+      return ResponseEntity.badRequest().body(
+        new DadosErroMensagem(extrairMensagemDeDuplicidade(causaRaiz))
+      );
     }
 
-    return ResponseEntity.badRequest().body(new DadosErroMensagem(mensagem));
+    log.error("Erro de persistência detectado: ", ex);
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+      new DadosErro500("Erro ao persistir os dados no banco de dados.")
+    );
   }
 
   // 4. Erro de Regra de Negócio
@@ -57,7 +76,7 @@ public class TratadorDeErros {
     );
   }
 
-  // 5. Erro 500
+  // 5. Erro 500 Geral
   @ExceptionHandler(Exception.class)
   public ResponseEntity tratarErro500(Exception ex) {
     log.error("Erro interno detectado: ", ex);
@@ -66,6 +85,18 @@ public class TratadorDeErros {
         "Erro interno do servidor. Por favor, tente novamente mais tarde."
       )
     );
+  }
+
+  private String extrairMensagemDeDuplicidade(String escopoMensagem) {
+    if (escopoMensagem == null) return "Erro de integridade de dados.";
+
+    var msgMinuscula = escopoMensagem.toLowerCase();
+    if (msgMinuscula.contains("cpf")) {
+      return "Já existe um usuário cadastrado com este CPF.";
+    } else if (msgMinuscula.contains("email")) {
+      return "Já existe um usuário cadastrado com este e-mail.";
+    }
+    return "Erro de integridade: registro duplicado ou violação de chave estrangeira.";
   }
 
   private record DadosErro500(String mensagem) {}

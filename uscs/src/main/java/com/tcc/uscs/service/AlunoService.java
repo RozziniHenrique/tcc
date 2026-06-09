@@ -1,10 +1,13 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.ValidacaoException;
+import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.aluno.dto.*;
 import com.tcc.uscs.repository.AlunoRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.StoredProcedureQuery;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +22,25 @@ public class AlunoService {
   private final AlunoRepository repository;
   private final EntityManager entityManager;
   private final PasswordEncoder passwordEncoder;
+
+  public Long buscarAlunoAleatorio(Long idCurso) {
+    var disponiveis = repository.findAllByCursoIdAndUsuarioAtivoTrue(idCurso);
+
+    if (disponiveis.isEmpty()) {
+      throw new ValidacaoException("Nenhum aluno disponível para este curso.");
+    }
+    int indiceAleatorio = ThreadLocalRandom.current().nextInt(
+      disponiveis.size()
+    );
+    return disponiveis.get(indiceAleatorio).getId();
+  }
+
+  public Aluno obterReferencia(Long id) {
+    if (!repository.existsById(id)) {
+      throw new ValidacaoException("Aluno não encontrado ou inativo!");
+    }
+    return repository.getReferenceById(id);
+  }
 
   @Transactional
   public DetalharAlunoDTO cadastrar(CadastrarAlunoDTO dados) {

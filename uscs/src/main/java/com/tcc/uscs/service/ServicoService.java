@@ -1,8 +1,10 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.servico.Servico;
 import com.tcc.uscs.model.servico.dto.*;
 import com.tcc.uscs.repository.ServicoRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +16,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class ServicoService {
 
   private final ServicoRepository repository;
+
+  public List<Servico> buscarServicosValidos(List<Long> ids) {
+    ids.forEach(id -> {
+      if (!repository.existsById(id)) {
+        throw new ValidacaoException(
+          "Serviço com ID " + id + " não encontrado!"
+        );
+      }
+    });
+    return ids.stream().map(repository::getReferenceById).toList();
+  }
 
   @Transactional
   public DetalharServicoDTO cadastrar(CadastrarServicoDTO dados) {

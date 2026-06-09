@@ -10,8 +10,6 @@ import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,10 +22,10 @@ public class AgendamentoService {
 
   private final AgendamentoRepository repository;
   private final ClienteRepository clienteRepository;
-  private final AlunoRepository alunoRepository;
   private final CursoRepository cursoRepository;
   private final UnidadeRepository unidadeRepository;
-  private final ServicoRepository servicoRepository;
+  private final AlunoService alunoService;
+  private final ServicoService servicoService;
 
   public Page<ListarAgendamentoDTO> listar(Pageable paginacao) {
     return repository.findAll(paginacao).map(ListarAgendamentoDTO::new);
@@ -49,33 +47,19 @@ public class AgendamentoService {
       );
     }
 
-    dados
-      .idServicos()
-      .forEach(idServico -> {
-        if (!servicoRepository.existsById(idServico)) {
-          throw new ValidacaoException(
-            "Serviço com ID " + idServico + " não encontrado!"
-          );
-        }
-      });
-
     Long idAluno = dados.idAluno();
     if (idAluno == null) {
-      idAluno = buscarAlunoAleatorio(dados.idCurso());
-    } else if (!alunoRepository.existsById(idAluno)) {
-      throw new ValidacaoException("Aluno não encontrado ou inativo!");
+      idAluno = alunoService.buscarAlunoAleatorio(dados.idCurso());
     }
 
     var cliente = clienteRepository.getReferenceById(dados.idCliente());
-    var aluno = alunoRepository.getReferenceById(idAluno);
+    var aluno = alunoService.obterReferencia(idAluno);
     var curso = cursoRepository.getReferenceById(dados.idCurso());
     var unidade = unidadeRepository.getReferenceById(dados.idUnidade());
 
-    List<Servico> servicosSelecionados = dados
-      .idServicos()
-      .stream()
-      .map(servicoRepository::getReferenceById)
-      .collect(Collectors.toList());
+    List<Servico> servicosSelecionados = servicoService.buscarServicosValidos(
+      dados.idServicos()
+    );
 
     validarHorarioAntecedencia(dados.dataHora());
     validarHorarioComercial(dados.dataHora());
@@ -88,7 +72,6 @@ public class AgendamentoService {
       unidade,
       dados.dataHora()
     );
-
     agendamento.setServicos(servicosSelecionados);
 
     BigDecimal valorTotalServicos = servicosSelecionados
@@ -97,7 +80,6 @@ public class AgendamentoService {
       .reduce(BigDecimal.ZERO, BigDecimal::add);
 
     agendamento.setValorNoAto(valorTotalServicos);
-
     repository.save(agendamento);
 
     return new DetalharAgendamentoDTO(agendamento);
@@ -136,20 +118,6 @@ public class AgendamentoService {
         "O cliente já possui agendamento neste horário."
       );
     }
-  }
-
-  private Long buscarAlunoAleatorio(Long idCurso) {
-    var disponiveis = alunoRepository.findAllByCursoIdAndUsuarioAtivoTrue(
-      idCurso
-    );
-
-    if (disponiveis.isEmpty()) {
-      throw new ValidacaoException("Nenhum aluno disponível para este curso.");
-    }
-    int indiceAleatorio = ThreadLocalRandom.current().nextInt(
-      disponiveis.size()
-    );
-    return disponiveis.get(indiceAleatorio).getId();
   }
 
   @Transactional
