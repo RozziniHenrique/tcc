@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -44,11 +45,13 @@ public class AlunoController {
   }
 
   @PutMapping("/{id}")
+  @Transactional
   public ResponseEntity<DetalharAlunoDTO> atualizar(
     @PathVariable Long id,
     @RequestBody @Valid AtualizarAlunoDTO dados
   ) {
-    return ResponseEntity.ok(service.atualizar(dados));
+    var dto = service.atualizar(id, dados);
+    return ResponseEntity.ok(dto);
   }
 
   @DeleteMapping("/{id}")

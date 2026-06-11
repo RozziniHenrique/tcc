@@ -18,14 +18,19 @@ public class ServicoService {
   private final ServicoRepository repository;
 
   public List<Servico> buscarServicosValidos(List<Long> ids) {
-    ids.forEach(id -> {
-      if (!repository.existsById(id)) {
-        throw new ValidacaoException(
-          "Serviço com ID " + id + " não encontrado!"
-        );
-      }
-    });
-    return ids.stream().map(repository::getReferenceById).toList();
+    if (ids == null || ids.isEmpty()) {
+      throw new ValidacaoException("A lista de serviços não pode estar vazia.");
+    }
+
+    List<Servico> servicos = repository.findAllById(ids);
+
+    if (servicos.size() != ids.size()) {
+      throw new ValidacaoException(
+        "Um ou mais serviços informados não foram encontrados ou estão inativos!"
+      );
+    }
+
+    return servicos;
   }
 
   @Transactional

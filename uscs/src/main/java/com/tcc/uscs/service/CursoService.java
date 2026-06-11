@@ -31,8 +31,8 @@ public class CursoService {
   }
 
   @Transactional
-  public DetalharCursoDTO atualizar(AtualizarCursoDTO dados) {
-    var curso = repository.getReferenceById(dados.id());
+  public DetalharCursoDTO atualizar(Long id, AtualizarCursoDTO dados) {
+    var curso = repository.getReferenceById(id);
     curso.atualizar(dados);
     return new DetalharCursoDTO(curso);
   }

@@ -94,8 +94,8 @@ public class ClienteService {
   }
 
   @Transactional
-  public DetalharClienteDTO atualizar(AtualizarClienteDTO dados) {
-    var cliente = repository.getReferenceById(dados.id());
+  public DetalharClienteDTO atualizar(Long id, AtualizarClienteDTO dados) {
+    var cliente = repository.getReferenceById(id);
     cliente.atualizar(dados);
     return new DetalharClienteDTO(cliente);
   }

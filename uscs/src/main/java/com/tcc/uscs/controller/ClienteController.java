@@ -48,7 +48,8 @@ public class ClienteController {
     @PathVariable Long id,
     @RequestBody @Valid AtualizarClienteDTO dados
   ) {
-    return ResponseEntity.ok(service.atualizar(dados));
+    var dto = service.atualizar(id, dados);
+    return ResponseEntity.ok(dto);
   }
 
   @DeleteMapping("/{id}")

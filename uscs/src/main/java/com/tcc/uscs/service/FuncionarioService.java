@@ -97,8 +97,11 @@ public class FuncionarioService {
   }
 
   @Transactional
-  public DetalharFuncionarioDTO atualizar(AtualizarFuncionarioDTO dados) {
-    var funcionario = repository.getReferenceById(dados.id());
+  public DetalharFuncionarioDTO atualizar(
+    Long id,
+    AtualizarFuncionarioDTO dados
+  ) {
+    var funcionario = repository.getReferenceById(id);
     funcionario.atualizar(dados);
     return new DetalharFuncionarioDTO(funcionario);
   }

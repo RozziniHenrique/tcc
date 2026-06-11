@@ -1,5 +1,10 @@
 package com.tcc.uscs.service;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
@@ -56,8 +61,8 @@ class AgendamentoServiceTest {
       dataInvalida
     );
 
-    org.mockito.Mockito.when(clienteRepository.existsById(1L)).thenReturn(true);
-    org.mockito.Mockito.when(unidadeRepository.existsById(1L)).thenReturn(true);
+    when(clienteRepository.existsById(1L)).thenReturn(true);
+    when(unidadeRepository.existsById(1L)).thenReturn(true);
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       agendamentoService.agendar(dto)
@@ -76,8 +81,8 @@ class AgendamentoServiceTest {
 
     var dto = new CadastrarAgendamentoDTO(1L, 1L, 1L, 1L, List.of(1L), domingo);
 
-    org.mockito.Mockito.when(clienteRepository.existsById(1L)).thenReturn(true);
-    org.mockito.Mockito.when(unidadeRepository.existsById(1L)).thenReturn(true);
+    when(clienteRepository.existsById(1L)).thenReturn(true);
+    when(unidadeRepository.existsById(1L)).thenReturn(true);
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       agendamentoService.agendar(dto)
@@ -105,10 +110,10 @@ class AgendamentoServiceTest {
       dataComercialValida
     );
 
-    org.mockito.Mockito.when(clienteRepository.existsById(1L)).thenReturn(true);
-    org.mockito.Mockito.when(unidadeRepository.existsById(1L)).thenReturn(true);
+    when(clienteRepository.existsById(1L)).thenReturn(true);
+    when(unidadeRepository.existsById(1L)).thenReturn(true);
 
-    org.mockito.Mockito.when(
+    when(
       repository.existsByAlunoIdAndDataHoraAndAtivoTrue(1L, dataComercialValida)
     ).thenReturn(true);
 
@@ -137,13 +142,13 @@ class AgendamentoServiceTest {
       dataComercialValida
     );
 
-    org.mockito.Mockito.when(clienteRepository.existsById(1L)).thenReturn(true);
-    org.mockito.Mockito.when(unidadeRepository.existsById(1L)).thenReturn(true);
+    when(clienteRepository.existsById(1L)).thenReturn(true);
+    when(unidadeRepository.existsById(1L)).thenReturn(true);
 
-    org.mockito.Mockito.when(
+    when(
       repository.existsByAlunoIdAndDataHoraAndAtivoTrue(1L, dataComercialValida)
     ).thenReturn(false);
-    org.mockito.Mockito.when(
+    when(
       repository.existsByClienteIdAndDataHoraAndAtivoTrue(
         1L,
         dataComercialValida
@@ -174,61 +179,39 @@ class AgendamentoServiceTest {
       dataValida
     );
 
-    org.mockito.Mockito.when(clienteRepository.existsById(1L)).thenReturn(true);
-    org.mockito.Mockito.when(unidadeRepository.existsById(1L)).thenReturn(true);
+    when(clienteRepository.existsById(1L)).thenReturn(true);
+    when(unidadeRepository.existsById(1L)).thenReturn(true);
 
-    var usuarioFake = org.mockito.Mockito.mock(
-      com.tcc.uscs.model.usuario.Usuario.class
-    );
-    org.mockito.Mockito.when(usuarioFake.getNome()).thenReturn("Nome de Teste");
+    var usuarioFake = mock(com.tcc.uscs.model.usuario.Usuario.class);
+    when(usuarioFake.getNome()).thenReturn("Nome de Teste");
 
-    var clienteMock = org.mockito.Mockito.mock(
-      com.tcc.uscs.model.cliente.Cliente.class
-    );
-    org.mockito.Mockito.when(clienteMock.getUsuario()).thenReturn(usuarioFake);
+    var clienteMock = mock(com.tcc.uscs.model.cliente.Cliente.class);
+    when(clienteMock.getUsuario()).thenReturn(usuarioFake);
 
-    var alunoMock = org.mockito.Mockito.mock(
-      com.tcc.uscs.model.aluno.Aluno.class
-    );
-    org.mockito.Mockito.when(alunoMock.getUsuario()).thenReturn(usuarioFake);
+    var alunoMock = mock(com.tcc.uscs.model.aluno.Aluno.class);
+    when(alunoMock.getUsuario()).thenReturn(usuarioFake);
 
-    var cursoMock = org.mockito.Mockito.mock(
-      com.tcc.uscs.model.curso.Curso.class
-    );
-    var unidadeMock = org.mockito.Mockito.mock(
-      com.tcc.uscs.model.unidade.Unidade.class
-    );
+    var cursoMock = mock(com.tcc.uscs.model.curso.Curso.class);
+    var unidadeMock = mock(com.tcc.uscs.model.unidade.Unidade.class);
 
-    org.mockito.Mockito.when(clienteRepository.getReferenceById(1L)).thenReturn(
-      clienteMock
-    );
-    org.mockito.Mockito.when(alunoService.obterReferencia(1L)).thenReturn(
-      alunoMock
-    );
-    org.mockito.Mockito.when(cursoRepository.getReferenceById(1L)).thenReturn(
-      cursoMock
-    );
-    org.mockito.Mockito.when(unidadeRepository.getReferenceById(1L)).thenReturn(
-      unidadeMock
-    );
+    when(clienteRepository.getReferenceById(1L)).thenReturn(clienteMock);
+    when(alunoService.obterReferencia(1L)).thenReturn(alunoMock);
+    when(cursoRepository.getReferenceById(1L)).thenReturn(cursoMock);
+    when(unidadeRepository.getReferenceById(1L)).thenReturn(unidadeMock);
 
-    var s1 = org.mockito.Mockito.mock(Servico.class);
-    org.mockito.Mockito.when(s1.getValor()).thenReturn(
-      new BigDecimal("100.00")
+    var s1 = mock(Servico.class);
+    when(s1.getValor()).thenReturn(new BigDecimal("100.00"));
+
+    var s2 = mock(Servico.class);
+    when(s2.getValor()).thenReturn(new BigDecimal("50.00"));
+
+    when(servicoService.buscarServicosValidos(dto.idServicos())).thenReturn(
+      List.of(s1, s2)
     );
-
-    var s2 = org.mockito.Mockito.mock(Servico.class);
-    org.mockito.Mockito.when(s2.getValor()).thenReturn(new BigDecimal("50.00"));
-
-    org.mockito.Mockito.when(
-      servicoService.buscarServicosValidos(dto.idServicos())
-    ).thenReturn(List.of(s1, s2));
 
     var resultado = agendamentoService.agendar(dto);
 
-    org.mockito.Mockito.verify(repository).save(
-      org.mockito.Mockito.any(Agendamento.class)
-    );
+    verify(repository).save(any(Agendamento.class));
     Assertions.assertNotNull(resultado);
   }
 
@@ -237,18 +220,16 @@ class AgendamentoServiceTest {
     "Deveria cancelar um agendamento com sucesso se tiver mais de 24h de antecedência"
   )
   void cenarioCancelarComSucesso() {
-    var agendamentoMock = org.mockito.Mockito.mock(Agendamento.class);
-    org.mockito.Mockito.when(agendamentoMock.getDataHora()).thenReturn(
+    var agendamentoMock = mock(Agendamento.class);
+    when(agendamentoMock.getDataHora()).thenReturn(
       LocalDateTime.now().plusDays(3)
     );
-    org.mockito.Mockito.when(repository.getReferenceById(1L)).thenReturn(
-      agendamentoMock
-    );
+    when(repository.getReferenceById(1L)).thenReturn(agendamentoMock);
 
     Assertions.assertDoesNotThrow(() ->
       agendamentoService.cancelar(1L, "Cliente desistiu")
     );
-    org.mockito.Mockito.verify(agendamentoMock).cancelar("Cliente desistiu");
+    verify(agendamentoMock).cancelar("Cliente desistiu");
   }
 
   @Test
@@ -256,13 +237,11 @@ class AgendamentoServiceTest {
     "Deveria lançar erro ao tentar cancelar agendamento com menos de 24h de antecedência"
   )
   void cenarioCancelarErroAntecedencia() {
-    var agendamentoMock = org.mockito.Mockito.mock(Agendamento.class);
-    org.mockito.Mockito.when(agendamentoMock.getDataHora()).thenReturn(
+    var agendamentoMock = mock(Agendamento.class);
+    when(agendamentoMock.getDataHora()).thenReturn(
       LocalDateTime.now().plusHours(2)
     );
-    org.mockito.Mockito.when(repository.getReferenceById(1L)).thenReturn(
-      agendamentoMock
-    );
+    when(repository.getReferenceById(1L)).thenReturn(agendamentoMock);
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       agendamentoService.cancelar(1L, "Mudança de planos")
@@ -278,13 +257,11 @@ class AgendamentoServiceTest {
     "Deveria lançar erro ao tentar cancelar sem enviar uma justificativa válida"
   )
   void cenarioCancelarErroJustificativaEmBranco() {
-    var agendamentoMock = org.mockito.Mockito.mock(Agendamento.class);
-    org.mockito.Mockito.when(agendamentoMock.getDataHora()).thenReturn(
+    var agendamentoMock = mock(Agendamento.class);
+    when(agendamentoMock.getDataHora()).thenReturn(
       LocalDateTime.now().plusDays(2)
     );
-    org.mockito.Mockito.when(repository.getReferenceById(1L)).thenReturn(
-      agendamentoMock
-    );
+    when(repository.getReferenceById(1L)).thenReturn(agendamentoMock);
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       agendamentoService.cancelar(1L, "   ")

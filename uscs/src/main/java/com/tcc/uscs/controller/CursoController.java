@@ -1,8 +1,6 @@
 package com.tcc.uscs.controller;
 
-import com.tcc.uscs.model.curso.dto.AtualizarCursoDTO;
-import com.tcc.uscs.model.curso.dto.CadastrarCursoDTO;
-import com.tcc.uscs.model.curso.dto.ListarCursoDTO;
+import com.tcc.uscs.model.curso.dto.*;
 import com.tcc.uscs.service.CursoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,14 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @RequiredArgsConstructor
@@ -28,7 +20,8 @@ public class CursoController {
   private final CursoService service;
 
   @PostMapping
-  public ResponseEntity cadastrar(
+  @Transactional
+  public ResponseEntity<DetalharCursoDTO> cadastrar(
     @RequestBody @Valid CadastrarCursoDTO dados,
     UriComponentsBuilder uriBuilder
   ) {
@@ -48,20 +41,23 @@ public class CursoController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity detalhar(@PathVariable Long id) {
+  public ResponseEntity<DetalharCursoDTO> detalhar(@PathVariable Long id) {
     return ResponseEntity.ok(service.detalhar(id));
   }
 
   @PutMapping("/{id}")
-  public ResponseEntity atualizar(
+  @Transactional
+  public ResponseEntity<DetalharCursoDTO> atualizar(
     @PathVariable Long id,
     @RequestBody @Valid AtualizarCursoDTO dados
   ) {
-    return ResponseEntity.ok(service.atualizar(dados));
+    var dto = service.atualizar(id, dados);
+    return ResponseEntity.ok(dto);
   }
 
   @DeleteMapping("/{id}")
-  public ResponseEntity excluir(@PathVariable Long id) {
+  @Transactional
+  public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();
   }

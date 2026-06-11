@@ -50,7 +50,8 @@ public class FuncionarioController {
     @PathVariable Long id,
     @RequestBody @Valid AtualizarFuncionarioDTO dados
   ) {
-    return ResponseEntity.ok(service.atualizar(dados));
+    var dto = service.atualizar(id, dados);
+    return ResponseEntity.ok(dto);
   }
 
   @DeleteMapping("/{id}")

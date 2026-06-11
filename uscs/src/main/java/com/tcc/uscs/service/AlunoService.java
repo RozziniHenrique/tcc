@@ -116,9 +116,10 @@ public class AlunoService {
   }
 
   @Transactional
-  public DetalharAlunoDTO atualizar(AtualizarAlunoDTO dados) {
-    var aluno = repository.getReferenceById(dados.id());
+  public DetalharAlunoDTO atualizar(Long id, AtualizarAlunoDTO dados) {
+    var aluno = repository.getReferenceById(id);
     aluno.atualizar(dados);
+
     return new DetalharAlunoDTO(aluno);
   }
 
