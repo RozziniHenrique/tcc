@@ -2,6 +2,7 @@ package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.curso.dto.*;
 import com.tcc.uscs.service.CursoService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ public class CursoController {
   private final CursoService service;
 
   @PostMapping
+  @Operation(summary = "Cadastra Curso")
   @Transactional
   public ResponseEntity<DetalharCursoDTO> cadastrar(
     @RequestBody @Valid CadastrarCursoDTO dados,
@@ -34,6 +36,7 @@ public class CursoController {
   }
 
   @GetMapping
+  @Operation(summary = "Lista Curso")
   public ResponseEntity<Page<ListarCursoDTO>> listar(
     @PageableDefault(size = 10, sort = { "nome" }) Pageable paginacao
   ) {
@@ -41,11 +44,13 @@ public class CursoController {
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Detalha Curso")
   public ResponseEntity<DetalharCursoDTO> detalhar(@PathVariable Long id) {
     return ResponseEntity.ok(service.detalhar(id));
   }
 
   @PutMapping("/{id}")
+  @Operation(summary = "Atualiza Curso")
   @Transactional
   public ResponseEntity<DetalharCursoDTO> atualizar(
     @PathVariable Long id,
@@ -56,6 +61,7 @@ public class CursoController {
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Deleta Curso")
   @Transactional
   public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);

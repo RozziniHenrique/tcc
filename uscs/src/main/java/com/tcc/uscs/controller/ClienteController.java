@@ -2,6 +2,7 @@ package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.cliente.dto.*;
 import com.tcc.uscs.service.ClienteService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,7 @@ public class ClienteController {
   private final ClienteService service;
 
   @PostMapping
+  @Operation(summary = "Cadastra Cliente")
   public ResponseEntity<DetalharClienteDTO> cadastrar(
     @RequestBody @Valid CadastrarClienteDTO dados,
     UriComponentsBuilder uriBuilder
@@ -32,6 +34,7 @@ public class ClienteController {
   }
 
   @GetMapping
+  @Operation(summary = "Lista Cliente")
   public ResponseEntity<Page<ListarClienteDTO>> listar(
     @PageableDefault(size = 10, sort = { "usuario.nome" }) Pageable paginacao
   ) {
@@ -39,11 +42,13 @@ public class ClienteController {
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Detalha Cliente")
   public ResponseEntity<DetalharClienteDTO> detalhar(@PathVariable Long id) {
     return ResponseEntity.ok(service.detalhar(id));
   }
 
   @PutMapping("/{id}")
+  @Operation(summary = "Atualiza Cliente")
   public ResponseEntity<DetalharClienteDTO> atualizar(
     @PathVariable Long id,
     @RequestBody @Valid AtualizarClienteDTO dados
@@ -53,6 +58,7 @@ public class ClienteController {
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Deleta Cliente")
   public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();

@@ -2,6 +2,7 @@ package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.aluno.dto.*;
 import com.tcc.uscs.service.AlunoService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ public class AlunoController {
   private final AlunoService service;
 
   @PostMapping
+  @Operation(summary = "Cadastra Aluno")
   public ResponseEntity<DetalharAlunoDTO> cadastrar(
     @RequestBody @Valid CadastrarAlunoDTO dados,
     UriComponentsBuilder uriBuilder
@@ -33,6 +35,7 @@ public class AlunoController {
   }
 
   @GetMapping
+  @Operation(summary = "Lista Aluno")
   public ResponseEntity<Page<ListarAlunoDTO>> listar(
     @PageableDefault(size = 10, sort = { "usuario.nome" }) Pageable paginacao
   ) {
@@ -40,11 +43,13 @@ public class AlunoController {
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Detalha Aluno")
   public ResponseEntity<DetalharAlunoDTO> detalhar(@PathVariable Long id) {
     return ResponseEntity.ok(service.detalhar(id));
   }
 
   @PutMapping("/{id}")
+  @Operation(summary = "Atualiza Aluno")
   @Transactional
   public ResponseEntity<DetalharAlunoDTO> atualizar(
     @PathVariable Long id,
@@ -55,6 +60,7 @@ public class AlunoController {
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Deleta Aluno")
   public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();

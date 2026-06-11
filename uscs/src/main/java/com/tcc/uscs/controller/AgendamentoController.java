@@ -2,6 +2,7 @@ package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.agendamento.dto.*;
 import com.tcc.uscs.service.AgendamentoService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ public class AgendamentoController {
   private final AgendamentoService service;
 
   @PostMapping
+  @Operation(summary = "Cadastra agendamento")
   public ResponseEntity<DetalharAgendamentoDTO> agendar(
     @RequestBody @Valid CadastrarAgendamentoDTO dados,
     UriComponentsBuilder uriBuilder
@@ -33,6 +35,7 @@ public class AgendamentoController {
   }
 
   @GetMapping
+  @Operation(summary = "Listar agendamento")
   public ResponseEntity<Page<ListarAgendamentoDTO>> listar(
     @PageableDefault(
       size = 10,
@@ -44,6 +47,7 @@ public class AgendamentoController {
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Detalhar agendamento")
   public ResponseEntity<DetalharAgendamentoDTO> detalhar(
     @PathVariable Long id
   ) {
@@ -51,6 +55,7 @@ public class AgendamentoController {
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Cancelar agendamento")
   public ResponseEntity<Void> cancelar(
     @PathVariable Long id,
     @RequestBody @Valid CancelamentoRequestDTO dto

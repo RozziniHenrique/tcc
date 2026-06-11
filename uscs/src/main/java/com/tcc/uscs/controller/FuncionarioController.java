@@ -2,6 +2,7 @@ package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.funcionario.dto.*;
 import com.tcc.uscs.service.FuncionarioService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,7 @@ public class FuncionarioController {
   private final FuncionarioService service;
 
   @PostMapping
+  @Operation(summary = "Cadastra Funcionario")
   public ResponseEntity<DetalharFuncionarioDTO> cadastrar(
     @RequestBody @Valid CadastrarFuncionarioDTO dados,
     UriComponentsBuilder uriBuilder
@@ -32,6 +34,7 @@ public class FuncionarioController {
   }
 
   @GetMapping
+  @Operation(summary = "Lista Funcionario")
   public ResponseEntity<Page<ListarFuncionarioDTO>> listar(
     @PageableDefault(size = 10, sort = { "usuario.nome" }) Pageable paginacao
   ) {
@@ -39,6 +42,7 @@ public class FuncionarioController {
   }
 
   @GetMapping("/{id}")
+  @Operation(summary = "Detalha Funcionario")
   public ResponseEntity<DetalharFuncionarioDTO> detalhar(
     @PathVariable Long id
   ) {
@@ -46,6 +50,7 @@ public class FuncionarioController {
   }
 
   @PutMapping("/{id}")
+  @Operation(summary = "Atualiza Funcionario")
   public ResponseEntity<DetalharFuncionarioDTO> atualizar(
     @PathVariable Long id,
     @RequestBody @Valid AtualizarFuncionarioDTO dados
@@ -55,6 +60,7 @@ public class FuncionarioController {
   }
 
   @DeleteMapping("/{id}")
+  @Operation(summary = "Deleta Funcionario")
   public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();
