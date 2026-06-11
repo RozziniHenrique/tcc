@@ -1,5 +1,6 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.util.StoredProcedureHelper;
 import com.tcc.uscs.model.cliente.dto.*;
 import com.tcc.uscs.repository.ClienteRepository;
 import jakarta.persistence.EntityManager;
@@ -28,36 +29,16 @@ public class ClienteService {
       "sp_cadastrar_usuario_cliente"
     );
 
-    query.registerStoredProcedureParameter(
-      "p_nome",
-      String.class,
-      ParameterMode.IN
+    StoredProcedureHelper.registrarParametrosComuns(
+      query,
+      dados.nome(),
+      dados.cpf(),
+      dados.email(),
+      senhaCriptografada,
+      dados.endereco(),
+      dados.telefone()
     );
-    query.registerStoredProcedureParameter(
-      "p_cpf",
-      String.class,
-      ParameterMode.IN
-    );
-    query.registerStoredProcedureParameter(
-      "p_email",
-      String.class,
-      ParameterMode.IN
-    );
-    query.registerStoredProcedureParameter(
-      "p_senha",
-      String.class,
-      ParameterMode.IN
-    );
-    query.registerStoredProcedureParameter(
-      "p_endereco",
-      String.class,
-      ParameterMode.IN
-    );
-    query.registerStoredProcedureParameter(
-      "p_telefone",
-      String.class,
-      ParameterMode.IN
-    );
+
     query.registerStoredProcedureParameter(
       "p_observacoes",
       String.class,
@@ -69,12 +50,6 @@ public class ClienteService {
       ParameterMode.OUT
     );
 
-    query.setParameter("p_nome", dados.nome());
-    query.setParameter("p_cpf", dados.cpf());
-    query.setParameter("p_email", dados.email());
-    query.setParameter("p_senha", senhaCriptografada);
-    query.setParameter("p_endereco", dados.endereco());
-    query.setParameter("p_telefone", dados.telefone());
     query.setParameter("p_observacoes", dados.observacoes());
 
     query.execute();

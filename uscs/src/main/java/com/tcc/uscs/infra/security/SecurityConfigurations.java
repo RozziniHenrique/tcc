@@ -35,6 +35,16 @@ public class SecurityConfigurations {
         req.requestMatchers(HttpMethod.POST, "/alunos").permitAll();
         req.requestMatchers(HttpMethod.POST, "/clientes").permitAll();
 
+        // Swagger
+
+        req
+          .requestMatchers(
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
+          )
+          .permitAll();
+
         // 2. Trava Segurança
         req
           .requestMatchers(HttpMethod.POST, "/funcionarios")

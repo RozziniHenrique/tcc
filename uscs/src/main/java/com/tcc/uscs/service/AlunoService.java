@@ -1,6 +1,7 @@
 package com.tcc.uscs.service;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
+import com.tcc.uscs.infra.util.StoredProcedureHelper;
 import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.aluno.dto.*;
 import com.tcc.uscs.repository.AlunoRepository;
@@ -50,36 +51,16 @@ public class AlunoService {
       "sp_cadastrar_usuario_aluno"
     );
 
-    query.registerStoredProcedureParameter(
-      "p_nome",
-      String.class,
-      ParameterMode.IN
+    StoredProcedureHelper.registrarParametrosComuns(
+      query,
+      dados.nome(),
+      dados.cpf(),
+      dados.email(),
+      senhaCriptografada,
+      dados.endereco(),
+      dados.telefone()
     );
-    query.registerStoredProcedureParameter(
-      "p_cpf",
-      String.class,
-      ParameterMode.IN
-    );
-    query.registerStoredProcedureParameter(
-      "p_email",
-      String.class,
-      ParameterMode.IN
-    );
-    query.registerStoredProcedureParameter(
-      "p_senha",
-      String.class,
-      ParameterMode.IN
-    );
-    query.registerStoredProcedureParameter(
-      "p_endereco",
-      String.class,
-      ParameterMode.IN
-    );
-    query.registerStoredProcedureParameter(
-      "p_telefone",
-      String.class,
-      ParameterMode.IN
-    );
+
     query.registerStoredProcedureParameter(
       "p_curso_id",
       Long.class,
@@ -91,12 +72,6 @@ public class AlunoService {
       ParameterMode.OUT
     );
 
-    query.setParameter("p_nome", dados.nome());
-    query.setParameter("p_cpf", dados.cpf());
-    query.setParameter("p_email", dados.email());
-    query.setParameter("p_senha", senhaCriptografada);
-    query.setParameter("p_endereco", dados.endereco());
-    query.setParameter("p_telefone", dados.telefone());
     query.setParameter("p_curso_id", dados.idCurso());
 
     query.execute();
@@ -119,7 +94,6 @@ public class AlunoService {
   public DetalharAlunoDTO atualizar(Long id, AtualizarAlunoDTO dados) {
     var aluno = repository.getReferenceById(id);
     aluno.atualizar(dados);
-
     return new DetalharAlunoDTO(aluno);
   }
 
