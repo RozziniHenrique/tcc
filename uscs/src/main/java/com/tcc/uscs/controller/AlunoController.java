@@ -50,7 +50,6 @@ public class AlunoController {
 
   @PutMapping("/{id}")
   @Operation(summary = "Atualiza Aluno")
-  @Transactional
   public ResponseEntity<DetalharAlunoDTO> atualizar(
     @PathVariable Long id,
     @RequestBody @Valid AtualizarAlunoDTO dados

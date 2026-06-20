@@ -9,7 +9,9 @@ import com.tcc.uscs.model.usuario.Usuario;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,13 +25,22 @@ public class TokenService {
   public String gerarToken(Usuario usuario) {
     try {
       var algoritmo = Algorithm.HMAC256(secret);
+
+      List<String> roles = usuario
+        .getAuthorities()
+        .stream()
+        .map(GrantedAuthority::getAuthority)
+        .toList();
+
       return JWT.create()
-        .withIssuer(ISSUER)
+        .withIssuer("API com.tcc.uscs")
         .withSubject(usuario.getEmail())
+        .withClaim("id", usuario.getId())
+        .withClaim("roles", roles)
         .withExpiresAt(dataExpiracao())
         .sign(algoritmo);
     } catch (JWTCreationException exception) {
-      throw new TokenInvalidoException("Erro ao gerar token JWT");
+      throw new RuntimeException("Erro ao gerar token JWT", exception);
     }
   }
 

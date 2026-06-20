@@ -3,7 +3,9 @@ package com.tcc.uscs.model.usuario;
 import com.tcc.uscs.model.usuario.dto.DadosCadastroUsuario;
 import jakarta.persistence.*;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -34,8 +36,14 @@ public class Usuario implements UserDetails {
   private String enderecoCompleto;
   private String telefone;
 
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(
+    name = "perfis_usuario",
+    joinColumns = @JoinColumn(name = "usuario_id")
+  )
+  @Column(name = "perfil")
   @Enumerated(EnumType.STRING)
-  private TipoUsuario tipoUsuario;
+  private Set<TipoUsuario> perfis = new HashSet<>();
 
   private Boolean ativo;
 
@@ -46,7 +54,7 @@ public class Usuario implements UserDetails {
     this.senha = senhaCriptografada;
     this.enderecoCompleto = dados.enderecoCompleto();
     this.telefone = dados.telefone();
-    this.tipoUsuario = dados.tipoUsuario();
+    this.perfis.add(dados.tipoUsuario());
     this.ativo = true;
   }
 
@@ -72,9 +80,9 @@ public class Usuario implements UserDetails {
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return List.of(
-      new SimpleGrantedAuthority("ROLE_" + this.tipoUsuario.name())
-    );
+    return this.perfis.stream()
+      .map(perfil -> new SimpleGrantedAuthority("ROLE_" + perfil.name()))
+      .toList();
   }
 
   @Override

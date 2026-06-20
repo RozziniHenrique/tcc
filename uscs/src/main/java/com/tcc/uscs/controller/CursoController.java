@@ -9,7 +9,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -22,7 +21,6 @@ public class CursoController {
 
   @PostMapping
   @Operation(summary = "Cadastra Curso")
-  @Transactional
   public ResponseEntity<DetalharCursoDTO> cadastrar(
     @RequestBody @Valid CadastrarCursoDTO dados,
     UriComponentsBuilder uriBuilder
@@ -51,7 +49,6 @@ public class CursoController {
 
   @PutMapping("/{id}")
   @Operation(summary = "Atualiza Curso")
-  @Transactional
   public ResponseEntity<DetalharCursoDTO> atualizar(
     @PathVariable Long id,
     @RequestBody @Valid AtualizarCursoDTO dados
@@ -62,7 +59,6 @@ public class CursoController {
 
   @DeleteMapping("/{id}")
   @Operation(summary = "Deleta Curso")
-  @Transactional
   public ResponseEntity<Void> excluir(@PathVariable Long id) {
     service.excluir(id);
     return ResponseEntity.noContent().build();

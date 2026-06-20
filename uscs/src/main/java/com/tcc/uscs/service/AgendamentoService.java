@@ -28,7 +28,9 @@ public class AgendamentoService {
   private final ServicoService servicoService;
 
   public Page<ListarAgendamentoDTO> listar(Pageable paginacao) {
-    return repository.findAll(paginacao).map(ListarAgendamentoDTO::new);
+    return repository
+      .findAllByAtivoTrue(paginacao)
+      .map(ListarAgendamentoDTO::new);
   }
 
   public DetalharAgendamentoDTO detalhar(Long id) {
@@ -132,10 +134,6 @@ public class AgendamentoService {
       24
     ) {
       throw new ValidacaoException("Cancelamento exige 24h de antecedência.");
-    }
-
-    if (justificativa == null || justificativa.isBlank()) {
-      throw new ValidacaoException("Justificativa é obrigatória.");
     }
 
     agendamento.cancelar(justificativa);

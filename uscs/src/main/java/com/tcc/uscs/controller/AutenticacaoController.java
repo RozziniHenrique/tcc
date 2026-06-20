@@ -20,7 +20,7 @@ public class AutenticacaoController {
   private final TokenService tokenService;
 
   @PostMapping
-  public ResponseEntity efetuarLogin(
+  public ResponseEntity<DadosTokenJWT> efuriaLogin(
     @RequestBody @Valid DadosAutenticacao dados
   ) {
     var authenticationToken = new UsernamePasswordAuthenticationToken(

@@ -11,6 +11,7 @@ import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.model.servico.Servico;
 import com.tcc.uscs.repository.*;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Assertions;
@@ -77,7 +78,11 @@ class AgendamentoServiceTest {
   @Test
   @DisplayName("Deveria lançar erro ao tentar agendar em um domingo")
   void cenarioForaHorarioComercialDomingo() {
-    var domingo = LocalDateTime.of(2026, 6, 14, 10, 0);
+    var domingo = LocalDateTime.now()
+      .plusWeeks(1)
+      .with(DayOfWeek.SUNDAY)
+      .withHour(10)
+      .withMinute(0);
 
     var dto = new CadastrarAgendamentoDTO(1L, 1L, 1L, 1L, List.of(1L), domingo);
 
@@ -99,7 +104,11 @@ class AgendamentoServiceTest {
     "Deveria lançar erro ao tentar agendar no mesmo horário para um aluno que já tem compromisso"
   )
   void cenarioConflitoHorarioAluno() {
-    var dataComercialValida = LocalDateTime.of(2026, 6, 16, 14, 0);
+    var dataComercialValida = LocalDateTime.now()
+      .plusWeeks(1)
+      .with(DayOfWeek.TUESDAY)
+      .withHour(14)
+      .withMinute(0);
 
     var dto = new CadastrarAgendamentoDTO(
       1L,
@@ -132,7 +141,12 @@ class AgendamentoServiceTest {
     "Deveria lançar erro ao tentar agendar no mesmo horário para um cliente que já tem compromisso"
   )
   void cenarioConflitoHorarioCliente() {
-    var dataComercialValida = LocalDateTime.of(2026, 6, 16, 14, 0);
+    var dataComercialValida = LocalDateTime.now()
+      .plusWeeks(1)
+      .with(DayOfWeek.TUESDAY)
+      .withHour(14)
+      .withMinute(0);
+
     var dto = new CadastrarAgendamentoDTO(
       1L,
       1L,
@@ -169,7 +183,12 @@ class AgendamentoServiceTest {
     "Deveria realizar o agendamento com sucesso calculando o valor total dos serviços"
   )
   void cenarioAgendamentoComSucesso() {
-    var dataValida = LocalDateTime.of(2026, 6, 16, 14, 0);
+    var dataValida = LocalDateTime.now()
+      .plusWeeks(1)
+      .with(DayOfWeek.TUESDAY)
+      .withHour(14)
+      .withMinute(0);
+
     var dto = new CadastrarAgendamentoDTO(
       1L,
       1L,
@@ -248,26 +267,6 @@ class AgendamentoServiceTest {
     );
     Assertions.assertEquals(
       "Cancelamento exige 24h de antecedência.",
-      excecao.getMessage()
-    );
-  }
-
-  @Test
-  @DisplayName(
-    "Deveria lançar erro ao tentar cancelar sem enviar uma justificativa válida"
-  )
-  void cenarioCancelarErroJustificativaEmBranco() {
-    var agendamentoMock = mock(Agendamento.class);
-    when(agendamentoMock.getDataHora()).thenReturn(
-      LocalDateTime.now().plusDays(2)
-    );
-    when(repository.getReferenceById(1L)).thenReturn(agendamentoMock);
-
-    var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
-      agendamentoService.cancelar(1L, "   ")
-    );
-    Assertions.assertEquals(
-      "Justificativa é obrigatória.",
       excecao.getMessage()
     );
   }
