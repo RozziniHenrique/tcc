@@ -227,7 +227,7 @@ Testes unitários implementados com **JUnit 5 + Mockito** cobrindo os cenários 
 | `cenarioAgendamentoComSucesso` | Cria agendamento e calcula valor total dos serviços corretamente |
 | `cenarioCancelarComSucesso` | Cancela agendamento com mais de 24h de antecedência |
 | `cenarioCancelarErroAntecedencia` | Lança erro ao cancelar com menos de 24h |
-| `cenarioCancelarErroJustificativaEmBranco` | Lança erro ao cancelar sem justificativa |
+| `cenarioCancelarSemJustificativa` | Lança erro ao cancelar sem justificativa |
 
 ```bash
 # Rodar os testes
