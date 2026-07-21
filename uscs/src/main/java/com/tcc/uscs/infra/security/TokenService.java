@@ -33,7 +33,7 @@ public class TokenService {
         .toList();
 
       return JWT.create()
-        .withIssuer("API com.tcc.uscs")
+        .withIssuer(ISSUER)
         .withSubject(usuario.getEmail())
         .withClaim("id", usuario.getId())
         .withClaim("roles", roles)

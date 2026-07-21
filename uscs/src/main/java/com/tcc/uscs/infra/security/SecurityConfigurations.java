@@ -34,9 +34,9 @@ public class SecurityConfigurations {
         req.requestMatchers(HttpMethod.POST, "/login").permitAll();
         req.requestMatchers(HttpMethod.POST, "/alunos").permitAll();
         req.requestMatchers(HttpMethod.POST, "/clientes").permitAll();
+        req.requestMatchers(HttpMethod.POST, "/senha/**").permitAll();
 
         // Swagger
-
         req
           .requestMatchers(
             "/v3/api-docs/**",
@@ -45,21 +45,31 @@ public class SecurityConfigurations {
           )
           .permitAll();
 
-        // 2. Trava Segurança
+        // 2. Trava Segurança Funcionario
         req
           .requestMatchers(HttpMethod.POST, "/funcionarios")
           .hasRole("FUNCIONARIO");
-
-        // 3. Rotas restritas
         req.requestMatchers("/cursos/**").hasRole("FUNCIONARIO");
         req.requestMatchers("/funcionarios/**").hasRole("FUNCIONARIO");
+        req
+          .requestMatchers(HttpMethod.GET, "/servicos/**", "/unidades/**")
+          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+        req
+          .requestMatchers("/servicos/**", "/unidades/**")
+          .hasRole("FUNCIONARIO");
+        req.requestMatchers("/relatorios/**").hasRole("FUNCIONARIO");
 
+        // 3. Rotas de Alunos, Clientes e Agendamentos
         req
           .requestMatchers(HttpMethod.GET, "/clientes/**", "/alunos/**")
           .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
 
         req
-          .requestMatchers("/clientes/**", "/alunos/**")
+          .requestMatchers(HttpMethod.PUT, "/clientes/**", "/alunos/**")
+          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+
+        req
+          .requestMatchers(HttpMethod.DELETE, "/clientes/**", "/alunos/**")
           .hasRole("FUNCIONARIO");
 
         req

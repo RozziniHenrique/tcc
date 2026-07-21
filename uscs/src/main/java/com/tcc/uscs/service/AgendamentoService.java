@@ -1,10 +1,16 @@
 package com.tcc.uscs.service;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
-import com.tcc.uscs.model.agendamento.*;
-import com.tcc.uscs.model.agendamento.dto.*;
+import com.tcc.uscs.model.agendamento.Agendamento;
+import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
+import com.tcc.uscs.model.agendamento.dto.DetalharAgendamentoDTO;
+import com.tcc.uscs.model.agendamento.dto.ListarAgendamentoDTO;
 import com.tcc.uscs.model.servico.Servico;
-import com.tcc.uscs.repository.*;
+import com.tcc.uscs.model.usuario.Usuario;
+import com.tcc.uscs.repository.AgendamentoRepository;
+import com.tcc.uscs.repository.ClienteRepository;
+import com.tcc.uscs.repository.CursoRepository;
+import com.tcc.uscs.repository.UnidadeRepository;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -13,6 +19,8 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,17 +36,52 @@ public class AgendamentoService {
   private final ServicoService servicoService;
 
   public Page<ListarAgendamentoDTO> listar(Pageable paginacao) {
+    var usuarioLogado = getUsuarioAutenticado();
+
+    boolean isCliente = usuarioLogado
+      .getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"));
+    boolean isAluno = usuarioLogado
+      .getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().equals("ROLE_ALUNO"));
+
+    if (isCliente) {
+      return repository
+        .findAllByClienteIdAndAtivoTrue(usuarioLogado.getId(), paginacao)
+        .map(ListarAgendamentoDTO::new);
+    } else if (isAluno) {
+      return repository
+        .findAllByAlunoIdAndAtivoTrue(usuarioLogado.getId(), paginacao)
+        .map(ListarAgendamentoDTO::new);
+    }
+
     return repository
       .findAllByAtivoTrue(paginacao)
       .map(ListarAgendamentoDTO::new);
   }
 
   public DetalharAgendamentoDTO detalhar(Long id) {
-    return new DetalharAgendamentoDTO(repository.getReferenceById(id));
+    var agendamento = repository.getReferenceById(id);
+    validarPosseDoAgendamento(agendamento);
+    return new DetalharAgendamentoDTO(agendamento);
   }
 
   @Transactional
   public DetalharAgendamentoDTO agendar(CadastrarAgendamentoDTO dados) {
+    var usuarioLogado = getUsuarioAutenticado();
+    boolean isCliente = usuarioLogado
+      .getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"));
+
+    if (isCliente && !usuarioLogado.getId().equals(dados.idCliente())) {
+      throw new AccessDeniedException(
+        "Você só pode realizar agendamentos para si mesmo."
+      );
+    }
+
     if (!clienteRepository.existsById(dados.idCliente())) {
       throw new ValidacaoException("Cliente não encontrado ou inativo!");
     }
@@ -125,6 +168,7 @@ public class AgendamentoService {
   @Transactional
   public void cancelar(Long id, String justificativa) {
     var agendamento = repository.getReferenceById(id);
+    validarPosseDoAgendamento(agendamento);
 
     if (
       Duration.between(
@@ -137,5 +181,36 @@ public class AgendamentoService {
     }
 
     agendamento.cancelar(justificativa);
+  }
+
+  private Usuario getUsuarioAutenticado() {
+    return (Usuario) SecurityContextHolder.getContext()
+      .getAuthentication()
+      .getPrincipal();
+  }
+
+  private void validarPosseDoAgendamento(Agendamento agendamento) {
+    var usuarioLogado = getUsuarioAutenticado();
+    boolean isFuncionario = usuarioLogado
+      .getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO"));
+
+    if (!isFuncionario) {
+      boolean isDonoCliente = agendamento
+        .getCliente()
+        .getId()
+        .equals(usuarioLogado.getId());
+      boolean isDonoAluno = agendamento
+        .getAluno()
+        .getId()
+        .equals(usuarioLogado.getId());
+
+      if (!isDonoCliente && !isDonoAluno) {
+        throw new AccessDeniedException(
+          "Você não tem permissão para interagir com este agendamento."
+        );
+      }
+    }
   }
 }

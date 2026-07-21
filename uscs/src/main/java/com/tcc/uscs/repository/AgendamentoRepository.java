@@ -16,10 +16,21 @@ public interface AgendamentoRepository
 {
   Page<Agendamento> findAllByAtivoTrue(Pageable paginacao);
 
+  Page<Agendamento> findAllByClienteIdAndAtivoTrue(
+    Long idCliente,
+    Pageable paginacao
+  );
+
+  Page<Agendamento> findAllByAlunoIdAndAtivoTrue(
+    Long idAluno,
+    Pageable paginacao
+  );
+
   boolean existsByAlunoIdAndDataHoraAndAtivoTrue(
     Long idAluno,
     LocalDateTime dataHora
   );
+
   boolean existsByClienteIdAndDataHoraAndAtivoTrue(
     Long idCliente,
     LocalDateTime dataHora

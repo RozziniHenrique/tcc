@@ -3,39 +3,34 @@ package com.tcc.uscs.controller;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
 import com.tcc.uscs.service.RelatorioService;
-import io.swagger.v3.oas.annotations.Operation;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("relatorios")
+@RequestMapping("/relatorios")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('FUNCIONARIO')")
 public class RelatorioController {
 
-  private final RelatorioService service;
+  private final RelatorioService relatorioService;
 
   @GetMapping("/faturamento")
-  @Operation(summary = "Obtém o faturamento total por período")
-  public ResponseEntity<FaturamentoRelatorioDTO> getFaturamento(
-    @RequestParam(required = false) @DateTimeFormat(
-      iso = DateTimeFormat.ISO.DATE_TIME
-    ) LocalDateTime inicio,
-    @RequestParam(required = false) @DateTimeFormat(
-      iso = DateTimeFormat.ISO.DATE_TIME
-    ) LocalDateTime fim
+  public ResponseEntity<FaturamentoRelatorioDTO> faturamento(
+    @RequestParam @DateTimeFormat(
+      iso = DateTimeFormat.ISO.DATE
+    ) LocalDate inicio,
+    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim
   ) {
-    return ResponseEntity.ok(service.obterRelatorioFaturamento(inicio, fim));
+    var relatorio = relatorioService.gerarRelatorioFaturamento(inicio, fim);
+    return ResponseEntity.ok(relatorio);
   }
 
   @GetMapping("/alunos-por-curso")
-  @Operation(summary = "Obtém a quantidade de alunos matriculados por curso")
-  public ResponseEntity<List<AlunosPorCursoRelatorioDTO>> getAlunosPorCurso() {
-    return ResponseEntity.ok(service.obterAlunosPorCurso());
+  public ResponseEntity<List<AlunosPorCursoRelatorioDTO>> alunosPorCurso() {
+    var relatorio = relatorioService.gerarRelatorioAlunosPorCurso();
+    return ResponseEntity.ok(relatorio);
   }
 }

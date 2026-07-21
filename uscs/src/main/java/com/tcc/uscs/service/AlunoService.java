@@ -3,7 +3,11 @@ package com.tcc.uscs.service;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.infra.util.StoredProcedureHelper;
 import com.tcc.uscs.model.aluno.Aluno;
-import com.tcc.uscs.model.aluno.dto.*;
+import com.tcc.uscs.model.aluno.dto.AtualizarAlunoDTO;
+import com.tcc.uscs.model.aluno.dto.CadastrarAlunoDTO;
+import com.tcc.uscs.model.aluno.dto.DetalharAlunoDTO;
+import com.tcc.uscs.model.aluno.dto.ListarAlunoDTO;
+import com.tcc.uscs.model.usuario.Usuario;
 import com.tcc.uscs.repository.AlunoRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
@@ -12,6 +16,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,11 +93,13 @@ public class AlunoService {
   }
 
   public DetalharAlunoDTO detalhar(Long id) {
+    validarPosseDoRecurso(id);
     return new DetalharAlunoDTO(repository.getReferenceById(id));
   }
 
   @Transactional
   public DetalharAlunoDTO atualizar(Long id, AtualizarAlunoDTO dados) {
+    validarPosseDoRecurso(id);
     var aluno = repository.getReferenceById(id);
     aluno.atualizar(dados);
     return new DetalharAlunoDTO(aluno);
@@ -100,5 +108,21 @@ public class AlunoService {
   @Transactional
   public void excluir(Long id) {
     repository.getReferenceById(id).excluir();
+  }
+
+  private void validarPosseDoRecurso(Long alunoId) {
+    var usuarioLogado = (Usuario) SecurityContextHolder.getContext()
+      .getAuthentication()
+      .getPrincipal();
+    boolean isFuncionario = usuarioLogado
+      .getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO"));
+
+    if (!isFuncionario && !usuarioLogado.getId().equals(alunoId)) {
+      throw new AccessDeniedException(
+        "Você não tem permissão para acessar ou alterar dados deste aluno."
+      );
+    }
   }
 }

@@ -1,6 +1,7 @@
 package com.tcc.uscs.repository;
 
 import com.tcc.uscs.model.usuario.Usuario;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
   Page<Usuario> findAllByAtivoTrue(Pageable paginacao);
 
   UserDetails findByEmail(String email);
+
+  Optional<Usuario> findByEmailAndAtivoTrue(String email);
 
   @Procedure(value = "sp_cadastrar_usuario_cliente")
   void cadastrarCliente(
