@@ -1,7 +1,12 @@
 package com.tcc.uscs.service;
 
-import com.tcc.uscs.infra.util.StoredProcedureHelper;
-import com.tcc.uscs.model.funcionario.dto.*;
+import com.tcc.uscs.infra.exception.ValidacaoException;
+import com.tcc.uscs.infra.helper.StoredProcedureHelper;
+import com.tcc.uscs.model.funcionario.Funcionario;
+import com.tcc.uscs.model.funcionario.dto.AtualizarFuncionarioDTO;
+import com.tcc.uscs.model.funcionario.dto.CadastrarFuncionarioDTO;
+import com.tcc.uscs.model.funcionario.dto.DetalharFuncionarioDTO;
+import com.tcc.uscs.model.funcionario.dto.ListarFuncionarioDTO;
 import com.tcc.uscs.repository.FuncionarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
@@ -20,6 +25,14 @@ public class FuncionarioService {
   private final FuncionarioRepository repository;
   private final EntityManager entityManager;
   private final PasswordEncoder passwordEncoder;
+
+  public Funcionario obterEntidadePorId(Long id) {
+    return repository
+      .findById(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Funcionário não encontrado ou inativo!")
+      );
+  }
 
   @Transactional
   public DetalharFuncionarioDTO cadastrar(CadastrarFuncionarioDTO dados) {
@@ -58,7 +71,7 @@ public class FuncionarioService {
     query.execute();
     Long idGerado = (Long) query.getOutputParameterValue("p_id");
 
-    return new DetalharFuncionarioDTO(repository.getReferenceById(idGerado));
+    return detalharPorId(idGerado);
   }
 
   public Page<ListarFuncionarioDTO> listar(Pageable paginacao) {
@@ -68,7 +81,7 @@ public class FuncionarioService {
   }
 
   public DetalharFuncionarioDTO detalhar(Long id) {
-    return new DetalharFuncionarioDTO(repository.getReferenceById(id));
+    return detalharPorId(id);
   }
 
   @Transactional
@@ -76,13 +89,19 @@ public class FuncionarioService {
     Long id,
     AtualizarFuncionarioDTO dados
   ) {
-    var funcionario = repository.getReferenceById(id);
+    var funcionario = obterEntidadePorId(id);
     funcionario.atualizar(dados);
     return new DetalharFuncionarioDTO(funcionario);
   }
 
   @Transactional
   public void excluir(Long id) {
-    repository.getReferenceById(id).excluir();
+    var funcionario = obterEntidadePorId(id);
+    funcionario.excluir();
+  }
+
+  private DetalharFuncionarioDTO detalharPorId(Long id) {
+    var funcionario = obterEntidadePorId(id);
+    return new DetalharFuncionarioDTO(funcionario);
   }
 }

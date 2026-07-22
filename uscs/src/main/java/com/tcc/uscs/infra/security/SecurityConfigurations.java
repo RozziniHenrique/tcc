@@ -30,13 +30,13 @@ public class SecurityConfigurations {
         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
       )
       .authorizeHttpRequests(req -> {
-        // 1. Rotas públicas
+        // 1. Rotas públicas (Login, Cadastros iniciais e Recuperação de Senha)
         req.requestMatchers(HttpMethod.POST, "/login").permitAll();
         req.requestMatchers(HttpMethod.POST, "/alunos").permitAll();
         req.requestMatchers(HttpMethod.POST, "/clientes").permitAll();
         req.requestMatchers(HttpMethod.POST, "/senha/**").permitAll();
 
-        // Swagger
+        // Documentação Swagger
         req
           .requestMatchers(
             "/v3/api-docs/**",
@@ -45,37 +45,47 @@ public class SecurityConfigurations {
           )
           .permitAll();
 
-        // 2. Trava Segurança Funcionario
+        // 2. Regras Administrativas e do Módulo de Relatórios (RF06)
         req
           .requestMatchers(HttpMethod.POST, "/funcionarios")
           .hasRole("FUNCIONARIO");
         req.requestMatchers("/cursos/**").hasRole("FUNCIONARIO");
         req.requestMatchers("/funcionarios/**").hasRole("FUNCIONARIO");
+        req.requestMatchers("/relatorios/**").hasRole("FUNCIONARIO");
+
+        // Gestão de Serviços e Unidades (Apenas Funcionário altera, todos leem)
         req
           .requestMatchers(HttpMethod.GET, "/servicos/**", "/unidades/**")
           .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
         req
           .requestMatchers("/servicos/**", "/unidades/**")
           .hasRole("FUNCIONARIO");
-        req.requestMatchers("/relatorios/**").hasRole("FUNCIONARIO");
 
-        // 3. Rotas de Alunos, Clientes e Agendamentos
+        // 3. Módulo de Avaliações (RF09)
+        req
+          .requestMatchers(HttpMethod.POST, "/avaliacoes/**")
+          .hasRole("CLIENTE");
+        req
+          .requestMatchers(HttpMethod.GET, "/avaliacoes/**")
+          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+
+        // 4. Perfil de Usuários (Clientes / Alunos)
         req
           .requestMatchers(HttpMethod.GET, "/clientes/**", "/alunos/**")
           .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
-
         req
           .requestMatchers(HttpMethod.PUT, "/clientes/**", "/alunos/**")
           .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
-
         req
           .requestMatchers(HttpMethod.DELETE, "/clientes/**", "/alunos/**")
           .hasRole("FUNCIONARIO");
 
+        // 5. Agendamentos
         req
           .requestMatchers("/agendamentos/**")
           .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
 
+        // Qualquer outra requisição precisa estar autenticada
         req.anyRequest().authenticated();
       })
       .addFilterBefore(

@@ -1,6 +1,8 @@
 package com.tcc.uscs.service;
 
-import com.tcc.uscs.infra.util.StoredProcedureHelper;
+import com.tcc.uscs.infra.exception.ValidacaoException;
+import com.tcc.uscs.infra.helper.StoredProcedureHelper;
+import com.tcc.uscs.model.cliente.Cliente;
 import com.tcc.uscs.model.cliente.dto.AtualizarClienteDTO;
 import com.tcc.uscs.model.cliente.dto.CadastrarClienteDTO;
 import com.tcc.uscs.model.cliente.dto.DetalharClienteDTO;
@@ -26,6 +28,14 @@ public class ClienteService {
   private final ClienteRepository repository;
   private final EntityManager entityManager;
   private final PasswordEncoder passwordEncoder;
+
+  public Cliente obterEntidadePorId(Long id) {
+    return repository
+      .findById(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Cliente não encontrado ou inativo!")
+      );
+  }
 
   @Transactional
   public DetalharClienteDTO cadastrar(CadastrarClienteDTO dados) {
@@ -61,7 +71,7 @@ public class ClienteService {
     query.execute();
     Long idGerado = (Long) query.getOutputParameterValue("p_id");
 
-    return new DetalharClienteDTO(repository.getReferenceById(idGerado));
+    return detalharPorId(idGerado);
   }
 
   public Page<ListarClienteDTO> listar(Pageable paginacao) {
@@ -72,20 +82,26 @@ public class ClienteService {
 
   public DetalharClienteDTO detalhar(Long id) {
     validarPosseDoRecurso(id);
-    return new DetalharClienteDTO(repository.getReferenceById(id));
+    return detalharPorId(id);
   }
 
   @Transactional
   public DetalharClienteDTO atualizar(Long id, AtualizarClienteDTO dados) {
     validarPosseDoRecurso(id);
-    var cliente = repository.getReferenceById(id);
+    var cliente = obterEntidadePorId(id);
     cliente.atualizar(dados);
     return new DetalharClienteDTO(cliente);
   }
 
   @Transactional
   public void excluir(Long id) {
-    repository.getReferenceById(id).excluir();
+    var cliente = obterEntidadePorId(id);
+    cliente.excluir();
+  }
+
+  private DetalharClienteDTO detalharPorId(Long id) {
+    var cliente = obterEntidadePorId(id);
+    return new DetalharClienteDTO(cliente);
   }
 
   private void validarPosseDoRecurso(Long clienteId) {

@@ -1,7 +1,11 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.curso.Curso;
-import com.tcc.uscs.model.curso.dto.*;
+import com.tcc.uscs.model.curso.dto.AtualizarCursoDTO;
+import com.tcc.uscs.model.curso.dto.CadastrarCursoDTO;
+import com.tcc.uscs.model.curso.dto.DetalharCursoDTO;
+import com.tcc.uscs.model.curso.dto.ListarCursoDTO;
 import com.tcc.uscs.repository.CursoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,18 +31,26 @@ public class CursoService {
   }
 
   public DetalharCursoDTO detalhar(Long id) {
-    return new DetalharCursoDTO(repository.getReferenceById(id));
+    var curso = repository
+      .findById(id)
+      .orElseThrow(() -> new ValidacaoException("Curso não encontrado!"));
+    return new DetalharCursoDTO(curso);
   }
 
   @Transactional
   public DetalharCursoDTO atualizar(Long id, AtualizarCursoDTO dados) {
-    var curso = repository.getReferenceById(id);
+    var curso = repository
+      .findById(id)
+      .orElseThrow(() -> new ValidacaoException("Curso não encontrado!"));
     curso.atualizar(dados);
     return new DetalharCursoDTO(curso);
   }
 
   @Transactional
   public void excluir(Long id) {
-    repository.getReferenceById(id).excluir();
+    var curso = repository
+      .findById(id)
+      .orElseThrow(() -> new ValidacaoException("Curso não encontrado!"));
+    curso.excluir();
   }
 }

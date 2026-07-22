@@ -1,7 +1,7 @@
 package com.tcc.uscs.service;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
-import com.tcc.uscs.infra.util.StoredProcedureHelper;
+import com.tcc.uscs.infra.helper.StoredProcedureHelper;
 import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.aluno.dto.AtualizarAlunoDTO;
 import com.tcc.uscs.model.aluno.dto.CadastrarAlunoDTO;
@@ -42,11 +42,12 @@ public class AlunoService {
     return disponiveis.get(indiceAleatorio).getId();
   }
 
-  public Aluno obterReferencia(Long id) {
-    if (!repository.existsById(id)) {
-      throw new ValidacaoException("Aluno não encontrado ou inativo!");
-    }
-    return repository.getReferenceById(id);
+  public Aluno obterEntidadePorId(Long id) {
+    return repository
+      .findById(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Aluno não encontrado ou inativo!")
+      );
   }
 
   @Transactional
@@ -83,7 +84,7 @@ public class AlunoService {
     query.execute();
     Long idGerado = (Long) query.getOutputParameterValue("p_id");
 
-    return new DetalharAlunoDTO(repository.getReferenceById(idGerado));
+    return detalharPorId(idGerado);
   }
 
   public Page<ListarAlunoDTO> listar(Pageable paginacao) {
@@ -94,20 +95,26 @@ public class AlunoService {
 
   public DetalharAlunoDTO detalhar(Long id) {
     validarPosseDoRecurso(id);
-    return new DetalharAlunoDTO(repository.getReferenceById(id));
+    return detalharPorId(id);
   }
 
   @Transactional
   public DetalharAlunoDTO atualizar(Long id, AtualizarAlunoDTO dados) {
     validarPosseDoRecurso(id);
-    var aluno = repository.getReferenceById(id);
+    var aluno = obterEntidadePorId(id);
     aluno.atualizar(dados);
     return new DetalharAlunoDTO(aluno);
   }
 
   @Transactional
   public void excluir(Long id) {
-    repository.getReferenceById(id).excluir();
+    var aluno = obterEntidadePorId(id);
+    aluno.excluir();
+  }
+
+  private DetalharAlunoDTO detalharPorId(Long id) {
+    var aluno = obterEntidadePorId(id);
+    return new DetalharAlunoDTO(aluno);
   }
 
   private void validarPosseDoRecurso(Long alunoId) {

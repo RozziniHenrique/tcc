@@ -1,26 +1,39 @@
 package com.tcc.uscs.service;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
+import com.tcc.uscs.model.aluno.Aluno;
+import com.tcc.uscs.model.cliente.Cliente;
+import com.tcc.uscs.model.curso.Curso;
 import com.tcc.uscs.model.servico.Servico;
-import com.tcc.uscs.repository.*;
+import com.tcc.uscs.model.unidade.Unidade;
+import com.tcc.uscs.model.usuario.Usuario;
+import com.tcc.uscs.repository.AgendamentoRepository;
+import com.tcc.uscs.repository.ClienteRepository;
+import com.tcc.uscs.repository.CursoRepository;
+import com.tcc.uscs.repository.UnidadeRepository;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class AgendamentoServiceTest {
@@ -46,6 +59,35 @@ class AgendamentoServiceTest {
   @Mock
   private ServicoService servicoService;
 
+  @Mock
+  private SecurityContext securityContext;
+
+  @Mock
+  private Authentication authentication;
+
+  @Mock
+  private Usuario usuarioLogado;
+
+  @BeforeEach
+  void setupSecurity() {
+    lenient()
+      .when(securityContext.getAuthentication())
+      .thenReturn(authentication);
+    lenient().when(authentication.getPrincipal()).thenReturn(usuarioLogado);
+    lenient().when(usuarioLogado.getId()).thenReturn(1L);
+
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_FUNCIONARIO")))
+      .when(usuarioLogado)
+      .getAuthorities();
+
+    SecurityContextHolder.setContext(securityContext);
+  }
+
+  @AfterEach
+  void clearSecurity() {
+    SecurityContextHolder.clearContext();
+  }
+
   @Test
   @DisplayName(
     "Deveria lançar erro ao tentar agendar com menos de 30 minutos de antecedência"
@@ -62,8 +104,16 @@ class AgendamentoServiceTest {
       dataInvalida
     );
 
-    when(clienteRepository.existsById(1L)).thenReturn(true);
-    when(unidadeRepository.existsById(1L)).thenReturn(true);
+    when(clienteRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Cliente.class))
+    );
+    when(alunoService.obterEntidadePorId(1L)).thenReturn(mock(Aluno.class));
+    when(cursoRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Curso.class))
+    );
+    when(unidadeRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Unidade.class))
+    );
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       agendamentoService.agendar(dto)
@@ -86,8 +136,16 @@ class AgendamentoServiceTest {
 
     var dto = new CadastrarAgendamentoDTO(1L, 1L, 1L, 1L, List.of(1L), domingo);
 
-    when(clienteRepository.existsById(1L)).thenReturn(true);
-    when(unidadeRepository.existsById(1L)).thenReturn(true);
+    when(clienteRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Cliente.class))
+    );
+    when(alunoService.obterEntidadePorId(1L)).thenReturn(mock(Aluno.class));
+    when(cursoRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Curso.class))
+    );
+    when(unidadeRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Unidade.class))
+    );
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       agendamentoService.agendar(dto)
@@ -119,8 +177,16 @@ class AgendamentoServiceTest {
       dataComercialValida
     );
 
-    when(clienteRepository.existsById(1L)).thenReturn(true);
-    when(unidadeRepository.existsById(1L)).thenReturn(true);
+    when(clienteRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Cliente.class))
+    );
+    when(alunoService.obterEntidadePorId(1L)).thenReturn(mock(Aluno.class));
+    when(cursoRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Curso.class))
+    );
+    when(unidadeRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Unidade.class))
+    );
 
     when(
       repository.existsByAlunoIdAndDataHoraAndAtivoTrue(1L, dataComercialValida)
@@ -156,8 +222,16 @@ class AgendamentoServiceTest {
       dataComercialValida
     );
 
-    when(clienteRepository.existsById(1L)).thenReturn(true);
-    when(unidadeRepository.existsById(1L)).thenReturn(true);
+    when(clienteRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Cliente.class))
+    );
+    when(alunoService.obterEntidadePorId(1L)).thenReturn(mock(Aluno.class));
+    when(cursoRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Curso.class))
+    );
+    when(unidadeRepository.findById(1L)).thenReturn(
+      Optional.of(mock(Unidade.class))
+    );
 
     when(
       repository.existsByAlunoIdAndDataHoraAndAtivoTrue(1L, dataComercialValida)
@@ -172,6 +246,7 @@ class AgendamentoServiceTest {
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       agendamentoService.agendar(dto)
     );
+
     Assertions.assertEquals(
       "O cliente já possui agendamento neste horário.",
       excecao.getMessage()
@@ -198,25 +273,22 @@ class AgendamentoServiceTest {
       dataValida
     );
 
-    when(clienteRepository.existsById(1L)).thenReturn(true);
-    when(unidadeRepository.existsById(1L)).thenReturn(true);
-
-    var usuarioFake = mock(com.tcc.uscs.model.usuario.Usuario.class);
+    var usuarioFake = mock(Usuario.class);
     when(usuarioFake.getNome()).thenReturn("Nome de Teste");
 
-    var clienteMock = mock(com.tcc.uscs.model.cliente.Cliente.class);
+    var clienteMock = mock(Cliente.class);
     when(clienteMock.getUsuario()).thenReturn(usuarioFake);
 
-    var alunoMock = mock(com.tcc.uscs.model.aluno.Aluno.class);
+    var alunoMock = mock(Aluno.class);
     when(alunoMock.getUsuario()).thenReturn(usuarioFake);
 
-    var cursoMock = mock(com.tcc.uscs.model.curso.Curso.class);
-    var unidadeMock = mock(com.tcc.uscs.model.unidade.Unidade.class);
+    var cursoMock = mock(Curso.class);
+    var unidadeMock = mock(Unidade.class);
 
-    when(clienteRepository.getReferenceById(1L)).thenReturn(clienteMock);
-    when(alunoService.obterReferencia(1L)).thenReturn(alunoMock);
-    when(cursoRepository.getReferenceById(1L)).thenReturn(cursoMock);
-    when(unidadeRepository.getReferenceById(1L)).thenReturn(unidadeMock);
+    when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteMock));
+    when(alunoService.obterEntidadePorId(1L)).thenReturn(alunoMock);
+    when(cursoRepository.findById(1L)).thenReturn(Optional.of(cursoMock));
+    when(unidadeRepository.findById(1L)).thenReturn(Optional.of(unidadeMock));
 
     var s1 = mock(Servico.class);
     when(s1.getValor()).thenReturn(new BigDecimal("100.00"));
@@ -243,7 +315,7 @@ class AgendamentoServiceTest {
     when(agendamentoMock.getDataHora()).thenReturn(
       LocalDateTime.now().plusDays(3)
     );
-    when(repository.getReferenceById(1L)).thenReturn(agendamentoMock);
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamentoMock));
 
     Assertions.assertDoesNotThrow(() ->
       agendamentoService.cancelar(1L, "Cliente desistiu")
@@ -260,7 +332,7 @@ class AgendamentoServiceTest {
     when(agendamentoMock.getDataHora()).thenReturn(
       LocalDateTime.now().plusHours(2)
     );
-    when(repository.getReferenceById(1L)).thenReturn(agendamentoMock);
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamentoMock));
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       agendamentoService.cancelar(1L, "Mudança de planos")

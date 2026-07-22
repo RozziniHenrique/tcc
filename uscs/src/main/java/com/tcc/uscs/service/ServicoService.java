@@ -2,7 +2,10 @@ package com.tcc.uscs.service;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.servico.Servico;
-import com.tcc.uscs.model.servico.dto.*;
+import com.tcc.uscs.model.servico.dto.AtualizarServicoDTO;
+import com.tcc.uscs.model.servico.dto.CadastrarServicoDTO;
+import com.tcc.uscs.model.servico.dto.DetalharServicoDTO;
+import com.tcc.uscs.model.servico.dto.ListarServicoDTO;
 import com.tcc.uscs.repository.ServicoRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -45,18 +48,26 @@ public class ServicoService {
   }
 
   public DetalharServicoDTO detalhar(Long id) {
-    return new DetalharServicoDTO(repository.getReferenceById(id));
+    var servico = repository
+      .findById(id)
+      .orElseThrow(() -> new ValidacaoException("Serviço não encontrado!"));
+    return new DetalharServicoDTO(servico);
   }
 
   @Transactional
   public DetalharServicoDTO atualizar(Long id, AtualizarServicoDTO dados) {
-    var servico = repository.getReferenceById(id);
+    var servico = repository
+      .findById(id)
+      .orElseThrow(() -> new ValidacaoException("Serviço não encontrado!"));
     servico.atualizar(dados);
     return new DetalharServicoDTO(servico);
   }
 
   @Transactional
   public void excluir(Long id) {
-    repository.getReferenceById(id).excluir();
+    var servico = repository
+      .findById(id)
+      .orElseThrow(() -> new ValidacaoException("Serviço não encontrado!"));
+    servico.excluir();
   }
 }
