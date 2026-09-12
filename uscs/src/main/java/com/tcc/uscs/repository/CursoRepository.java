@@ -10,4 +10,17 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
   Page<Curso> findAllByAtivoTrue(Pageable paginacao);
 
   Optional<Curso> findByIdAndAtivoTrue(Long id);
+
+  boolean existsByNomeIgnoreCaseAndPeriodoIgnoreCaseAndAnoVigenteAndAtivoTrue(
+    String nome,
+    String periodo,
+    String anoVigente
+  );
+
+  boolean existsByNomeIgnoreCaseAndPeriodoIgnoreCaseAndAnoVigenteAndAtivoTrueAndIdNot(
+    String nome,
+    String periodo,
+    String anoVigente,
+    Long id
+  );
 }
