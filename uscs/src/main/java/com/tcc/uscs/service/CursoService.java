@@ -21,36 +21,70 @@ public class CursoService {
 
   @Transactional
   public DetalharCursoDTO cadastrar(CadastrarCursoDTO dados) {
+    if (
+      repository.existsByNomeIgnoreCaseAndPeriodoIgnoreCaseAndAnoVigenteAndAtivoTrue(
+        dados.nome(),
+        dados.periodo(),
+        dados.anoVigente()
+      )
+    ) {
+      throw new ValidacaoException(
+        "Já existe um curso ativo com o mesmo nome, período e ano vigente."
+      );
+    }
+
     var curso = new Curso(dados);
     repository.save(curso);
     return new DetalharCursoDTO(curso);
   }
 
+  @Transactional(readOnly = true)
   public Page<ListarCursoDTO> listar(Pageable paginacao) {
     return repository.findAllByAtivoTrue(paginacao).map(ListarCursoDTO::new);
   }
 
+  @Transactional(readOnly = true)
   public DetalharCursoDTO detalhar(Long id) {
-    var curso = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Curso não encontrado!"));
-    return new DetalharCursoDTO(curso);
+    return new DetalharCursoDTO(obterCursoAtivo(id));
   }
 
   @Transactional
   public DetalharCursoDTO atualizar(Long id, AtualizarCursoDTO dados) {
-    var curso = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Curso não encontrado!"));
+    var curso = obterCursoAtivo(id);
+
+    var nome = dados.nome() != null ? dados.nome() : curso.getNome();
+    var periodo =
+      dados.periodo() != null ? dados.periodo() : curso.getPeriodo();
+    var anoVigente =
+      dados.anoVigente() != null ? dados.anoVigente() : curso.getAnoVigente();
+
+    if (
+      repository.existsByNomeIgnoreCaseAndPeriodoIgnoreCaseAndAnoVigenteAndAtivoTrueAndIdNot(
+        nome,
+        periodo,
+        anoVigente,
+        id
+      )
+    ) {
+      throw new ValidacaoException(
+        "Já existe um curso ativo com o mesmo nome, período e ano vigente."
+      );
+    }
+
     curso.atualizar(dados);
     return new DetalharCursoDTO(curso);
   }
 
   @Transactional
   public void excluir(Long id) {
-    var curso = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Curso não encontrado!"));
-    curso.excluir();
+    obterCursoAtivo(id).excluir();
+  }
+
+  private Curso obterCursoAtivo(Long id) {
+    return repository
+      .findByIdAndAtivoTrue(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Curso não encontrado ou inativo.")
+      );
   }
 }
