@@ -2,6 +2,7 @@ package com.tcc.uscs.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -232,5 +233,44 @@ class AlunoServiceTest {
     assertEquals("Curso não encontrado ou inativo.", erro.getMessage());
 
     verify(aluno, never()).setCurso(any(Curso.class));
+  }
+
+  @Test
+  @DisplayName("Deveria obter aluno ativo pertencente ao curso")
+  void cenarioObterAlunoDoCurso() {
+    var aluno = mock(Aluno.class);
+    var curso = mock(Curso.class);
+
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(aluno)
+    );
+    when(aluno.getCurso()).thenReturn(curso);
+    when(curso.getId()).thenReturn(2L);
+
+    var resultado = alunoService.obterEntidadePorIdECurso(1L, 2L);
+
+    assertSame(aluno, resultado);
+  }
+
+  @Test
+  @DisplayName("Deveria recusar aluno que não pertence ao curso")
+  void cenarioObterAlunoDeOutroCurso() {
+    var aluno = mock(Aluno.class);
+    var curso = mock(Curso.class);
+
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(aluno)
+    );
+    when(aluno.getCurso()).thenReturn(curso);
+    when(curso.getId()).thenReturn(3L);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      alunoService.obterEntidadePorIdECurso(1L, 2L)
+    );
+
+    assertEquals(
+      "O aluno informado não pertence ao curso selecionado.",
+      erro.getMessage()
+    );
   }
 }

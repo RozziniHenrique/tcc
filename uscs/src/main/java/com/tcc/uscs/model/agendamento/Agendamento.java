@@ -40,6 +40,10 @@ public class Agendamento {
   @JoinColumn(name = "unidade_id")
   private Unidade unidade;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private StatusAgendamento status;
+
   @ManyToMany(fetch = FetchType.LAZY)
   @JoinTable(
     name = "agendamento_servicos",
@@ -73,10 +77,32 @@ public class Agendamento {
     this.unidade = unidade;
     this.dataHora = dataHora;
     this.ativo = true;
+    this.status = StatusAgendamento.AGENDADO;
+  }
+
+  public void atualizar(
+    Aluno aluno,
+    Curso curso,
+    Unidade unidade,
+    List<Servico> servicos,
+    LocalDateTime dataHora,
+    BigDecimal valorNoAto
+  ) {
+    this.aluno = aluno;
+    this.curso = curso;
+    this.unidade = unidade;
+    this.servicos = servicos;
+    this.dataHora = dataHora;
+    this.valorNoAto = valorNoAto;
   }
 
   public void cancelar(String justificativa) {
     this.ativo = false;
+    this.status = StatusAgendamento.CANCELADO;
     this.justificativaCancelamento = justificativa;
+  }
+
+  public void concluir() {
+    this.status = StatusAgendamento.CONCLUIDO;
   }
 }

@@ -1,6 +1,7 @@
 package com.tcc.uscs.repository;
 
 import com.tcc.uscs.model.agendamento.Agendamento;
+import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
 import java.time.LocalDateTime;
@@ -64,4 +65,35 @@ public interface AgendamentoRepository
     """
   )
   List<AlunosPorCursoRelatorioDTO> contarAlunosPorCurso();
+
+  boolean existsByAlunoIdAndDataHoraAndAtivoTrueAndIdNot(
+    Long idAluno,
+    LocalDateTime dataHora,
+    Long idAgendamento
+  );
+
+  boolean existsByClienteIdAndDataHoraAndAtivoTrueAndIdNot(
+    Long idCliente,
+    LocalDateTime dataHora,
+    Long idAgendamento
+  );
+
+  @Query(
+    """
+      SELECT a
+      FROM Agendamento a
+      WHERE (a.cliente.id = :idUsuario OR a.aluno.id = :idUsuario)
+        AND (:status IS NULL OR a.status = :status)
+    """
+  )
+  Page<Agendamento> findAllVinculadosAoUsuario(
+    @Param("idUsuario") Long idUsuario,
+    @Param("status") StatusAgendamento status,
+    Pageable paginacao
+  );
+
+  Page<Agendamento> findAllByStatus(
+    StatusAgendamento status,
+    Pageable paginacao
+  );
 }

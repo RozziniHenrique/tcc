@@ -2,6 +2,8 @@ package com.tcc.uscs.service;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.agendamento.Agendamento;
+import com.tcc.uscs.model.agendamento.StatusAgendamento;
+import com.tcc.uscs.model.agendamento.dto.AtualizarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.DetalharAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.ListarAgendamentoDTO;
@@ -32,33 +34,48 @@ public class AgendamentoService {
   private final AlunoService alunoService;
   private final ServicoService servicoService;
 
-  public Page<ListarAgendamentoDTO> listar(Pageable paginacao) {
-    var usuarioLogado = getUsuarioAutenticado();
+  @Transactional(readOnly = true)
+  public Page<ListarAgendamentoDTO> listar(
+    Pageable paginacao,
+    StatusAgendamento status
+  ) {
+    var usuario = getUsuarioAutenticado();
 
-    boolean isCliente = usuarioLogado
+    boolean isFuncionario = usuario
       .getAuthorities()
       .stream()
-      .anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE"));
-    boolean isAluno = usuarioLogado
+      .anyMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO"));
+
+    if (isFuncionario) {
+      var pagina =
+        status == null
+          ? repository.findAll(paginacao)
+          : repository.findAllByStatus(status, paginacao);
+
+      return pagina.map(ListarAgendamentoDTO::new);
+    }
+
+    boolean possuiPerfilClienteOuAluno = usuario
       .getAuthorities()
       .stream()
-      .anyMatch(a -> a.getAuthority().equals("ROLE_ALUNO"));
+      .anyMatch(
+        a ->
+          a.getAuthority().equals("ROLE_CLIENTE") ||
+          a.getAuthority().equals("ROLE_ALUNO")
+      );
 
-    if (isCliente) {
+    if (possuiPerfilClienteOuAluno) {
       return repository
-        .findAllByClienteIdAndAtivoTrue(usuarioLogado.getId(), paginacao)
-        .map(ListarAgendamentoDTO::new);
-    } else if (isAluno) {
-      return repository
-        .findAllByAlunoIdAndAtivoTrue(usuarioLogado.getId(), paginacao)
+        .findAllVinculadosAoUsuario(usuario.getId(), status, paginacao)
         .map(ListarAgendamentoDTO::new);
     }
 
-    return repository
-      .findAllByAtivoTrue(paginacao)
-      .map(ListarAgendamentoDTO::new);
+    throw new AccessDeniedException(
+      "Usuário sem perfil autorizado para consultar agendamentos."
+    );
   }
 
+  @Transactional(readOnly = true)
   public DetalharAgendamentoDTO detalhar(Long id) {
     var agendamento = repository
       .findById(id)
@@ -89,16 +106,19 @@ public class AgendamentoService {
     }
 
     var cliente = clienteRepository
-      .findById(dados.idCliente())
+      .findByIdAndAtivoTrueAndUsuarioAtivoTrue(dados.idCliente())
       .orElseThrow(() ->
         new ValidacaoException("Cliente não encontrado ou inativo!")
       );
-    var aluno = alunoService.obterEntidadePorId(idAluno);
     var curso = cursoRepository
-      .findById(dados.idCurso())
-      .orElseThrow(() -> new ValidacaoException("Curso não encontrado!"));
+      .findByIdAndAtivoTrue(dados.idCurso())
+      .orElseThrow(() ->
+        new ValidacaoException("Curso não encontrado ou inativo!")
+      );
+
+    var aluno = alunoService.obterEntidadePorIdECurso(idAluno, dados.idCurso());
     var unidade = unidadeRepository
-      .findById(dados.idUnidade())
+      .findByIdAndAtivoTrue(dados.idUnidade())
       .orElseThrow(() ->
         new ValidacaoException("Unidade/Franquia não encontrada ou inativa!")
       );
@@ -120,13 +140,93 @@ public class AgendamentoService {
     );
     agendamento.setServicos(servicosSelecionados);
 
-    BigDecimal valorTotalServicos = servicosSelecionados
-      .stream()
-      .map(Servico::getValor)
-      .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal valorTotalServicos = calcularValorTotal(servicosSelecionados);
 
     agendamento.setValorNoAto(valorTotalServicos);
     repository.save(agendamento);
+
+    return new DetalharAgendamentoDTO(agendamento);
+  }
+
+  @Transactional
+  public DetalharAgendamentoDTO atualizar(
+    Long id,
+    AtualizarAgendamentoDTO dados
+  ) {
+    if (dados.semAlteracoes()) {
+      throw new ValidacaoException(
+        "Informe pelo menos um campo para atualizar o agendamento."
+      );
+    }
+
+    var agendamento = repository
+      .findById(id)
+      .orElseThrow(() -> new ValidacaoException("Agendamento não encontrado."));
+
+    validarPermissaoParaAlterarOuCancelar(agendamento);
+
+    if (agendamento.getStatus() != StatusAgendamento.AGENDADO) {
+      throw new ValidacaoException(
+        "Somente agendamentos com status AGENDADO podem ser alterados."
+      );
+    }
+
+    var curso =
+      dados.idCurso() != null
+        ? cursoRepository
+            .findByIdAndAtivoTrue(dados.idCurso())
+            .orElseThrow(() ->
+              new ValidacaoException("Curso não encontrado ou inativo!")
+            )
+        : agendamento.getCurso();
+    var aluno =
+      dados.idAluno() != null || dados.idCurso() != null
+        ? alunoService.obterEntidadePorIdECurso(
+            dados.idAluno() != null
+              ? dados.idAluno()
+              : agendamento.getAluno().getId(),
+            curso.getId()
+          )
+        : agendamento.getAluno();
+
+    var unidade =
+      dados.idUnidade() != null
+        ? unidadeRepository
+            .findByIdAndAtivoTrue(dados.idUnidade())
+            .orElseThrow(() ->
+              new ValidacaoException(
+                "Unidade/Franquia não encontrada ou inativa!"
+              )
+            )
+        : agendamento.getUnidade();
+
+    var servicos =
+      dados.idServicos() != null
+        ? servicoService.buscarServicosValidos(dados.idServicos())
+        : agendamento.getServicos();
+
+    var dataHora =
+      dados.dataHora() != null ? dados.dataHora() : agendamento.getDataHora();
+
+    validarHorarioAntecedencia(dataHora);
+    validarHorarioComercial(dataHora);
+    validarConflitoHorarioNaAtualizacao(
+      aluno.getId(),
+      agendamento.getCliente().getId(),
+      dataHora,
+      agendamento.getId()
+    );
+
+    var valorTotal = calcularValorTotal(servicos);
+
+    agendamento.atualizar(
+      aluno,
+      curso,
+      unidade,
+      servicos,
+      dataHora,
+      valorTotal
+    );
 
     return new DetalharAgendamentoDTO(agendamento);
   }
@@ -171,7 +271,14 @@ public class AgendamentoService {
     var agendamento = repository
       .findById(id)
       .orElseThrow(() -> new ValidacaoException("Agendamento não encontrado."));
-    validarPosseDoAgendamento(agendamento);
+
+    validarPermissaoParaAlterarOuCancelar(agendamento);
+
+    if (agendamento.getStatus() != StatusAgendamento.AGENDADO) {
+      throw new ValidacaoException(
+        "Somente agendamentos com status AGENDADO podem ser cancelados."
+      );
+    }
 
     if (
       Duration.between(
@@ -214,6 +321,113 @@ public class AgendamentoService {
           "Você não tem permissão para interagir com este agendamento."
         );
       }
+    }
+  }
+
+  @Transactional
+  public void concluir(Long id) {
+    var agendamento = repository
+      .findById(id)
+      .orElseThrow(() -> new ValidacaoException("Agendamento não encontrado."));
+
+    validarPermissaoParaConcluir(agendamento);
+
+    if (agendamento.getStatus() != StatusAgendamento.AGENDADO) {
+      throw new ValidacaoException(
+        "Somente agendamentos com status AGENDADO podem ser concluídos."
+      );
+    }
+
+    if (agendamento.getDataHora().isAfter(LocalDateTime.now())) {
+      throw new ValidacaoException(
+        "Não é possível concluir um agendamento antes do horário marcado."
+      );
+    }
+
+    agendamento.concluir();
+  }
+
+  private void validarConflitoHorarioNaAtualizacao(
+    Long idAluno,
+    Long idCliente,
+    LocalDateTime data,
+    Long idAgendamento
+  ) {
+    if (
+      repository.existsByAlunoIdAndDataHoraAndAtivoTrueAndIdNot(
+        idAluno,
+        data,
+        idAgendamento
+      )
+    ) {
+      throw new ValidacaoException(
+        "O aluno já possui agendamento neste horário."
+      );
+    }
+
+    if (
+      repository.existsByClienteIdAndDataHoraAndAtivoTrueAndIdNot(
+        idCliente,
+        data,
+        idAgendamento
+      )
+    ) {
+      throw new ValidacaoException(
+        "O cliente já possui agendamento neste horário."
+      );
+    }
+  }
+
+  private BigDecimal calcularValorTotal(List<Servico> servicos) {
+    return servicos
+      .stream()
+      .map(Servico::getValor)
+      .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  private void validarPermissaoParaAlterarOuCancelar(Agendamento agendamento) {
+    var usuario = getUsuarioAutenticado();
+
+    boolean isFuncionario = usuario
+      .getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO"));
+
+    if (isFuncionario) {
+      return;
+    }
+
+    boolean isClienteDono =
+      agendamento.getCliente() != null &&
+      agendamento.getCliente().getId().equals(usuario.getId());
+
+    if (!isClienteDono) {
+      throw new AccessDeniedException(
+        "Você não tem permissão para alterar ou cancelar este agendamento."
+      );
+    }
+  }
+
+  private void validarPermissaoParaConcluir(Agendamento agendamento) {
+    var usuario = getUsuarioAutenticado();
+
+    boolean isFuncionario = usuario
+      .getAuthorities()
+      .stream()
+      .anyMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO"));
+
+    if (isFuncionario) {
+      return;
+    }
+
+    boolean isAlunoResponsavel =
+      agendamento.getAluno() != null &&
+      agendamento.getAluno().getId().equals(usuario.getId());
+
+    if (!isAlunoResponsavel) {
+      throw new AccessDeniedException(
+        "Você não tem permissão para concluir este agendamento."
+      );
     }
   }
 }

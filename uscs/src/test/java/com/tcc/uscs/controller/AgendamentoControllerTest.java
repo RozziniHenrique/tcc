@@ -1,13 +1,17 @@
 package com.tcc.uscs.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.agendamento.dto.*;
 import com.tcc.uscs.service.AgendamentoService;
 import java.math.BigDecimal;
@@ -20,12 +24,12 @@ import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
@@ -37,7 +41,7 @@ class AgendamentoControllerTest {
   @Autowired
   private MockMvc mvc;
 
-  @MockBean
+  @MockitoBean
   private AgendamentoService agendamentoService;
 
   @Autowired
@@ -48,6 +52,9 @@ class AgendamentoControllerTest {
 
   @Autowired
   private JacksonTester<CancelamentoRequestDTO> cancelamentoRequestDtoJson;
+
+  @Autowired
+  private JacksonTester<AtualizarAgendamentoDTO> atualizarAgendamentoDtoJson;
 
   @Test
   @DisplayName(
@@ -90,12 +97,19 @@ class AgendamentoControllerTest {
 
     var dtoDetalhar = new DetalharAgendamentoDTO(
       1L,
+      1L,
       "Cliente Teste",
+      1L,
       "Aluno Teste",
+      1L,
       "Curso Teste",
+      1L,
       "Unidade Teste",
+      List.of(),
       dataValida,
-      new BigDecimal("150.00")
+      new BigDecimal("150.00"),
+      StatusAgendamento.AGENDADO,
+      null
     );
 
     when(
@@ -127,12 +141,14 @@ class AgendamentoControllerTest {
       "Unidade Centro",
       dataValida,
       new BigDecimal("100.00"),
-      true
+      StatusAgendamento.AGENDADO
     );
 
     var paginaFake = new PageImpl<>(List.of(itemLista));
 
-    when(agendamentoService.listar(any(Pageable.class))).thenReturn(paginaFake);
+    when(agendamentoService.listar(any(Pageable.class), any())).thenReturn(
+      paginaFake
+    );
 
     mvc.perform(get("/agendamentos")).andExpect(status().isOk());
   }
@@ -146,12 +162,19 @@ class AgendamentoControllerTest {
     var dataValida = LocalDateTime.now().plusDays(1);
     var dtoDetalhar = new DetalharAgendamentoDTO(
       1L,
+      1L,
       "Cliente Teste",
+      1L,
       "Aluno Teste",
+      1L,
       "Curso Teste",
+      1L,
       "Unidade Teste",
+      List.of(),
       dataValida,
-      new BigDecimal("150.00")
+      new BigDecimal("150.00"),
+      StatusAgendamento.AGENDADO,
+      null
     );
 
     when(agendamentoService.detalhar(1L)).thenReturn(dtoDetalhar);
@@ -195,6 +218,96 @@ class AgendamentoControllerTest {
         delete("/agendamentos/1")
           .contentType(MediaType.APPLICATION_JSON)
           .content("{\"justificativa\":\"\"}")
+      )
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @DisplayName(
+    "Deveria devolver código HTTP 200 ao reagendar com dados válidos"
+  )
+  @WithMockUser(roles = "CLIENTE")
+  void cenarioAtualizarAgendamentoComSucesso() throws Exception {
+    var novaData = LocalDateTime.now().plusDays(2).withHour(14).withMinute(0);
+
+    var dados = new AtualizarAgendamentoDTO(1L, 1L, 1L, List.of(1L), novaData);
+
+    var detalhe = new DetalharAgendamentoDTO(
+      1L,
+      1L,
+      "Cliente Teste",
+      1L,
+      "Aluno Teste",
+      1L,
+      "Curso Teste",
+      1L,
+      "Unidade Teste",
+      List.of(),
+      novaData,
+      new BigDecimal("150.00"),
+      StatusAgendamento.AGENDADO,
+      null
+    );
+
+    when(
+      agendamentoService.atualizar(
+        any(Long.class),
+        any(AtualizarAgendamentoDTO.class)
+      )
+    ).thenReturn(detalhe);
+
+    mvc
+      .perform(
+        put("/agendamentos/1")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(atualizarAgendamentoDtoJson.write(dados).getJson())
+      )
+      .andExpect(status().isOk());
+  }
+
+  @Test
+  @DisplayName("Deveria devolver código HTTP 204 ao concluir agendamento")
+  @WithMockUser(roles = "ALUNO")
+  void cenarioConcluirAgendamentoComSucesso() throws Exception {
+    mvc
+      .perform(patch("/agendamentos/1/concluir"))
+      .andExpect(status().isNoContent());
+
+    verify(agendamentoService).concluir(1L);
+  }
+
+  @Test
+  @DisplayName("Deveria aceitar filtro de agendamentos por status")
+  @WithMockUser(roles = "FUNCIONARIO")
+  void cenarioFiltrarAgendamentosPorStatus() throws Exception {
+    mvc
+      .perform(get("/agendamentos").param("status", "CONCLUIDO"))
+      .andExpect(status().isOk());
+
+    verify(agendamentoService).listar(
+      any(Pageable.class),
+      eq(StatusAgendamento.CONCLUIDO)
+    );
+  }
+
+  @Test
+  @DisplayName("Deveria recusar cadastro com IDs inválidos")
+  @WithMockUser(roles = "CLIENTE")
+  void cenarioAgendarComIdsInvalidos() throws Exception {
+    var dados = new CadastrarAgendamentoDTO(
+      -1L,
+      1L,
+      1L,
+      1L,
+      List.of(1L),
+      LocalDateTime.now().plusDays(1)
+    );
+
+    mvc
+      .perform(
+        post("/agendamentos")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(cadastrarAgendamentoDtoJson.write(dados).getJson())
       )
       .andExpect(status().isBadRequest());
   }
