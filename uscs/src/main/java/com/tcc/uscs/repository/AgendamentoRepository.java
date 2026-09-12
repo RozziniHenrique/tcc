@@ -2,6 +2,7 @@ package com.tcc.uscs.repository;
 
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.StatusAgendamento;
+import com.tcc.uscs.model.avaliacao.dto.AvaliacaoPendenteDTO;
 import com.tcc.uscs.model.relatorio.dto.AgendamentosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
@@ -126,5 +127,33 @@ public interface AgendamentoRepository
   Page<Agendamento> findAllByStatus(
     StatusAgendamento status,
     Pageable paginacao
+  );
+
+  @Query(
+    """
+      SELECT new com.tcc.uscs.model.avaliacao.dto.AvaliacaoPendenteDTO(
+        a.id,
+        al.id,
+        al.usuario.nome,
+        c.id,
+        c.nome,
+        a.dataHora
+      )
+      FROM Agendamento a
+      JOIN a.aluno al
+      JOIN a.curso c
+      WHERE a.cliente.id = :idCliente
+        AND a.status = com.tcc.uscs.model.agendamento.StatusAgendamento.CONCLUIDO
+        AND a.ativo = true
+        AND NOT EXISTS (
+          SELECT av.id
+          FROM Avaliacao av
+          WHERE av.agendamento = a
+        )
+      ORDER BY a.dataHora DESC
+    """
+  )
+  List<AvaliacaoPendenteDTO> listarPendentesDeAvaliacao(
+    @Param("idCliente") Long idCliente
   );
 }
