@@ -170,7 +170,12 @@ class RecuperacaoSenhaServiceTest {
     when(passwordEncoder.encode("novaSenha123")).thenReturn("nova-senha-hash");
 
     service.redefinirSenha(
-      new RedefinirSenhaDTO("usuario@email.com", "123456", "novaSenha123")
+      new RedefinirSenhaDTO(
+        "usuario@email.com",
+        "123456",
+        "novaSenha123",
+        "novaSenha123"
+      )
     );
 
     verify(usuario).setSenha("nova-senha-hash");
@@ -185,5 +190,31 @@ class RecuperacaoSenhaServiceTest {
     token.setTentativas(tentativas);
     token.setDataExpiracao(LocalDateTime.now().plusMinutes(15));
     return token;
+  }
+
+  @Test
+  void deveRecusarQuandoConfirmacaoDaSenhaForDiferente() {
+    var dados = new RedefinirSenhaDTO(
+      "usuario@email.com",
+      "123456",
+      "novaSenha123",
+      "outraSenha123"
+    );
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      service.redefinirSenha(dados)
+    );
+
+    assertEquals(
+      "A nova senha e a confirmação não são iguais.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(
+      usuarioRepository,
+      tokenRepository,
+      passwordEncoder,
+      emailService,
+      refreshTokenService
+    );
   }
 }

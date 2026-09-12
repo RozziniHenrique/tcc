@@ -9,6 +9,7 @@ import com.tcc.uscs.repository.PasswordResetTokenRepository;
 import com.tcc.uscs.repository.UsuarioRepository;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -69,6 +70,11 @@ public class RecuperacaoSenhaService {
 
   @Transactional(noRollbackFor = ValidacaoException.class)
   public void redefinirSenha(RedefinirSenhaDTO dados) {
+    if (!Objects.equals(dados.novaSenha(), dados.confirmacaoSenha())) {
+      throw new ValidacaoException(
+        "A nova senha e a confirmação não são iguais."
+      );
+    }
     var resetToken = obterTokenValido(dados.email());
     validarTentativa(resetToken, dados.codigo());
 
