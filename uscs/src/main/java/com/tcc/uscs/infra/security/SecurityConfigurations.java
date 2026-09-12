@@ -30,13 +30,24 @@ public class SecurityConfigurations {
         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
       )
       .authorizeHttpRequests(req -> {
-        // 1. Rotas públicas (Login, Cadastros iniciais e Recuperação de Senha)
-        req.requestMatchers(HttpMethod.POST, "/login").permitAll();
-        req.requestMatchers(HttpMethod.POST, "/alunos").permitAll();
-        req.requestMatchers(HttpMethod.POST, "/clientes").permitAll();
-        req.requestMatchers(HttpMethod.POST, "/senha/**").permitAll();
+        // Rotas públicas
+        req
+          .requestMatchers(
+            HttpMethod.POST,
+            "/login",
+            "/auth/login",
+            "/auth/refresh"
+          )
+          .permitAll();
+        req
+          .requestMatchers(HttpMethod.POST, "/auth/password/**", "/senha/**")
+          .permitAll();
+        req
+          .requestMatchers(HttpMethod.POST, "/alunos", "/clientes")
+          .permitAll();
+        req.requestMatchers("/actuator/health").permitAll();
 
-        // Documentação Swagger
+        // Swagger
         req
           .requestMatchers(
             "/v3/api-docs/**",
@@ -45,47 +56,62 @@ public class SecurityConfigurations {
           )
           .permitAll();
 
-        // 2. Regras Administrativas e do Módulo de Relatórios (RF06)
-        req
-          .requestMatchers(HttpMethod.POST, "/funcionarios")
-          .hasRole("FUNCIONARIO");
-        req.requestMatchers("/cursos/**").hasRole("FUNCIONARIO");
-        req.requestMatchers("/funcionarios/**").hasRole("FUNCIONARIO");
-        req.requestMatchers("/relatorios/**").hasRole("FUNCIONARIO");
+        // Conta do próprio usuário
+        req.requestMatchers("/me/**").authenticated();
 
-        // Gestão de Serviços e Unidades (Apenas Funcionário altera, todos leem)
+        // Funcionários e relatórios: apenas gestão
+        req
+          .requestMatchers("/relatorios/**")
+          .hasAnyRole("GESTOR", "SUPERVISOR", "ADMIN");
+        req
+          .requestMatchers("/funcionarios/**")
+          .hasAnyRole("GESTOR", "SUPERVISOR", "ADMIN");
+
+        // Cursos: leitura para autenticados; escrita para professor/gestão
+        req.requestMatchers(HttpMethod.GET, "/cursos/**").authenticated();
+        req
+          .requestMatchers("/cursos/**")
+          .hasAnyRole("PROFESSOR", "GESTOR", "SUPERVISOR", "ADMIN");
+
+        // Serviços e unidades: leitura para autenticados; escrita para operação/gestão
         req
           .requestMatchers(HttpMethod.GET, "/servicos/**", "/unidades/**")
-          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+          .authenticated();
         req
           .requestMatchers("/servicos/**", "/unidades/**")
-          .hasRole("FUNCIONARIO");
+          .hasAnyRole("ATENDENTE", "GESTOR", "SUPERVISOR", "ADMIN");
 
-        // 3. Módulo de Avaliações (RF09)
+        // Avaliações
         req
           .requestMatchers(HttpMethod.POST, "/avaliacoes/**")
           .hasRole("CLIENTE");
-        req
-          .requestMatchers(HttpMethod.GET, "/avaliacoes/**")
-          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+        req.requestMatchers(HttpMethod.GET, "/avaliacoes/**").authenticated();
 
-        // 4. Perfil de Usuários (Clientes / Alunos)
+        // Listagens globais de pessoas são somente para funcionários autorizados
+        req
+          .requestMatchers(HttpMethod.GET, "/clientes", "/alunos")
+          .hasAnyRole(
+            "ATENDENTE",
+            "PROFESSOR",
+            "GESTOR",
+            "SUPERVISOR",
+            "ADMIN"
+          );
+
+        // Detalhe e edição continuam com validação de posse nos services
         req
           .requestMatchers(HttpMethod.GET, "/clientes/**", "/alunos/**")
-          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+          .authenticated();
         req
           .requestMatchers(HttpMethod.PUT, "/clientes/**", "/alunos/**")
-          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+          .authenticated();
         req
           .requestMatchers(HttpMethod.DELETE, "/clientes/**", "/alunos/**")
-          .hasRole("FUNCIONARIO");
+          .hasAnyRole("GESTOR", "SUPERVISOR", "ADMIN");
 
-        // 5. Agendamentos
-        req
-          .requestMatchers("/agendamentos/**")
-          .hasAnyRole("FUNCIONARIO", "CLIENTE", "ALUNO");
+        // Agenda: regras finas de posse permanecem no service
+        req.requestMatchers("/agendamentos/**").authenticated();
 
-        // Qualquer outra requisição precisa estar autenticada
         req.anyRequest().authenticated();
       })
       .addFilterBefore(

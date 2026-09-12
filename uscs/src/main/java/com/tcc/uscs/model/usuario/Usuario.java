@@ -1,5 +1,6 @@
 package com.tcc.uscs.model.usuario;
 
+import com.tcc.uscs.model.funcionario.Funcionario;
 import com.tcc.uscs.model.usuario.dto.DadosCadastroUsuario;
 import jakarta.persistence.*;
 import java.util.Collection;
@@ -47,6 +48,9 @@ public class Usuario implements UserDetails {
 
   private Boolean ativo;
 
+  @OneToOne(mappedBy = "usuario", fetch = FetchType.EAGER)
+  private Funcionario funcionario;
+
   public Usuario(DadosCadastroUsuario dados, String senhaCriptografada) {
     this.nome = dados.nome();
     this.cpf = dados.cpf();
@@ -80,9 +84,19 @@ public class Usuario implements UserDetails {
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return this.perfis.stream()
-      .map(perfil -> new SimpleGrantedAuthority("ROLE_" + perfil.name()))
-      .toList();
+    Set<GrantedAuthority> authorities = this.perfis.stream()
+      .map(perfil ->
+        (GrantedAuthority) new SimpleGrantedAuthority("ROLE_" + perfil.name())
+      )
+      .collect(java.util.stream.Collectors.toSet());
+
+    if (funcionario != null && funcionario.getFuncao() != null) {
+      authorities.add(
+        new SimpleGrantedAuthority("ROLE_" + funcionario.getFuncao().name())
+      );
+    }
+
+    return authorities;
   }
 
   @Override

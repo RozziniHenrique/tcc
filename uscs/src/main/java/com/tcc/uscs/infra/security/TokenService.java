@@ -7,8 +7,6 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.tcc.uscs.infra.exception.TokenInvalidoException;
 import com.tcc.uscs.model.usuario.Usuario;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,12 +18,14 @@ public class TokenService {
   @Value("${api.security.token.secret}")
   private String secret;
 
-  private static final String ISSUER = "API TCC USCS";
+  @Value("${api.security.token.access-expiration-seconds:900}")
+  private long accessExpirationSeconds;
 
-  public String gerarToken(Usuario usuario) {
+  private static final String ISSUER = "STFER API";
+
+  public String gerarAccessToken(Usuario usuario) {
     try {
       var algoritmo = Algorithm.HMAC256(secret);
-
       List<String> roles = usuario
         .getAuthorities()
         .stream()
@@ -37,11 +37,16 @@ public class TokenService {
         .withSubject(usuario.getEmail())
         .withClaim("id", usuario.getId())
         .withClaim("roles", roles)
-        .withExpiresAt(dataExpiracao())
+        .withIssuedAt(Instant.now())
+        .withExpiresAt(Instant.now().plusSeconds(accessExpirationSeconds))
         .sign(algoritmo);
     } catch (JWTCreationException exception) {
-      throw new RuntimeException("Erro ao gerar token JWT", exception);
+      throw new IllegalStateException("Erro ao gerar token JWT", exception);
     }
+  }
+
+  public String gerarToken(Usuario usuario) {
+    return gerarAccessToken(usuario);
   }
 
   public String getSubject(String tokenJWT) {
@@ -57,7 +62,7 @@ public class TokenService {
     }
   }
 
-  private Instant dataExpiracao() {
-    return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
+  public long getAccessExpirationSeconds() {
+    return accessExpirationSeconds;
   }
 }
