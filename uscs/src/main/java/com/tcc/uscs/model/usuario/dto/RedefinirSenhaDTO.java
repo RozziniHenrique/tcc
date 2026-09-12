@@ -12,5 +12,8 @@ public record RedefinirSenhaDTO(
   String codigo,
   @NotBlank
   @Size(min = 8, message = "A senha deve ter pelo menos 8 caracteres")
-  String novaSenha
+  String novaSenha,
+  @NotBlank
+  @Size(min = 8, message = "A confirmação deve ter pelo menos 8 caracteres")
+  String confirmacaoSenha
 ) {}
