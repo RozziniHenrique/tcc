@@ -146,4 +146,17 @@ public class AlunoService {
       );
     }
   }
+
+  @Transactional(readOnly = true)
+  public Aluno obterEntidadePorIdECurso(Long idAluno, Long idCurso) {
+    var aluno = obterEntidadePorId(idAluno);
+
+    if (aluno.getCurso() == null || !aluno.getCurso().getId().equals(idCurso)) {
+      throw new ValidacaoException(
+        "O aluno informado não pertence ao curso selecionado."
+      );
+    }
+
+    return aluno;
+  }
 }

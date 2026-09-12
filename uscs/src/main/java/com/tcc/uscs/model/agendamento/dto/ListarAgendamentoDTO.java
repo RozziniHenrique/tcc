@@ -1,6 +1,7 @@
 package com.tcc.uscs.model.agendamento.dto;
 
 import com.tcc.uscs.model.agendamento.Agendamento;
+import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -12,7 +13,7 @@ public record ListarAgendamentoDTO(
   String nomeUnidade,
   LocalDateTime dataHora,
   BigDecimal valorNoAto,
-  Boolean ativo
+  StatusAgendamento status
 ) {
   public ListarAgendamentoDTO(Agendamento a) {
     this(
@@ -23,7 +24,7 @@ public record ListarAgendamentoDTO(
       a.getUnidade() != null ? a.getUnidade().getNome() : "Não informada",
       a.getDataHora(),
       a.getValorNoAto(),
-      a.getAtivo()
+      a.getStatus()
     );
   }
 }

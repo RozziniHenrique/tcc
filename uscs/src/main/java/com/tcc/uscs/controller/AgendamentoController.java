@@ -1,5 +1,6 @@
 package com.tcc.uscs.controller;
 
+import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.agendamento.dto.*;
 import com.tcc.uscs.service.AgendamentoService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,15 +36,16 @@ public class AgendamentoController {
   }
 
   @GetMapping
-  @Operation(summary = "Listar agendamento")
+  @Operation(summary = "Lista agendamentos")
   public ResponseEntity<Page<ListarAgendamentoDTO>> listar(
     @PageableDefault(
       size = 10,
       sort = "dataHora",
       direction = Sort.Direction.DESC
-    ) Pageable paginacao
+    ) Pageable paginacao,
+    @RequestParam(required = false) StatusAgendamento status
   ) {
-    return ResponseEntity.ok(service.listar(paginacao));
+    return ResponseEntity.ok(service.listar(paginacao, status));
   }
 
   @GetMapping("/{id}")
@@ -52,6 +54,22 @@ public class AgendamentoController {
     @PathVariable Long id
   ) {
     return ResponseEntity.ok(service.detalhar(id));
+  }
+
+  @PutMapping("/{id}")
+  @Operation(summary = "Atualiza ou reagenda um agendamento")
+  public ResponseEntity<DetalharAgendamentoDTO> atualizar(
+    @PathVariable Long id,
+    @RequestBody @Valid AtualizarAgendamentoDTO dados
+  ) {
+    return ResponseEntity.ok(service.atualizar(id, dados));
+  }
+
+  @PatchMapping("/{id}/concluir")
+  @Operation(summary = "Conclui um agendamento realizado")
+  public ResponseEntity<Void> concluir(@PathVariable Long id) {
+    service.concluir(id);
+    return ResponseEntity.noContent().build();
   }
 
   @DeleteMapping("/{id}")

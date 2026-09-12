@@ -1,10 +1,14 @@
 package com.tcc.uscs.service;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.agendamento.Agendamento;
+import com.tcc.uscs.model.agendamento.StatusAgendamento;
+import com.tcc.uscs.model.agendamento.dto.AtualizarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.cliente.Cliente;
@@ -30,6 +34,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
@@ -76,10 +83,10 @@ class AgendamentoServiceTest {
     lenient().when(authentication.getPrincipal()).thenReturn(usuarioLogado);
     lenient().when(usuarioLogado.getId()).thenReturn(1L);
 
-    doReturn(List.of(new SimpleGrantedAuthority("ROLE_FUNCIONARIO")))
+    lenient()
+      .doReturn(List.of(new SimpleGrantedAuthority("ROLE_FUNCIONARIO")))
       .when(usuarioLogado)
       .getAuthorities();
-
     SecurityContextHolder.setContext(securityContext);
   }
 
@@ -104,14 +111,16 @@ class AgendamentoServiceTest {
       dataInvalida
     );
 
-    when(clienteRepository.findById(1L)).thenReturn(
-      Optional.of(mock(Cliente.class))
+    when(
+      clienteRepository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
+    ).thenReturn(Optional.of(mock(Cliente.class)));
+    when(alunoService.obterEntidadePorIdECurso(1L, 1L)).thenReturn(
+      mock(Aluno.class)
     );
-    when(alunoService.obterEntidadePorId(1L)).thenReturn(mock(Aluno.class));
-    when(cursoRepository.findById(1L)).thenReturn(
+    when(cursoRepository.findByIdAndAtivoTrue(1L)).thenReturn(
       Optional.of(mock(Curso.class))
     );
-    when(unidadeRepository.findById(1L)).thenReturn(
+    when(unidadeRepository.findByIdAndAtivoTrue(1L)).thenReturn(
       Optional.of(mock(Unidade.class))
     );
 
@@ -136,14 +145,16 @@ class AgendamentoServiceTest {
 
     var dto = new CadastrarAgendamentoDTO(1L, 1L, 1L, 1L, List.of(1L), domingo);
 
-    when(clienteRepository.findById(1L)).thenReturn(
-      Optional.of(mock(Cliente.class))
+    when(
+      clienteRepository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
+    ).thenReturn(Optional.of(mock(Cliente.class)));
+    when(alunoService.obterEntidadePorIdECurso(1L, 1L)).thenReturn(
+      mock(Aluno.class)
     );
-    when(alunoService.obterEntidadePorId(1L)).thenReturn(mock(Aluno.class));
-    when(cursoRepository.findById(1L)).thenReturn(
+    when(cursoRepository.findByIdAndAtivoTrue(1L)).thenReturn(
       Optional.of(mock(Curso.class))
     );
-    when(unidadeRepository.findById(1L)).thenReturn(
+    when(unidadeRepository.findByIdAndAtivoTrue(1L)).thenReturn(
       Optional.of(mock(Unidade.class))
     );
 
@@ -177,14 +188,16 @@ class AgendamentoServiceTest {
       dataComercialValida
     );
 
-    when(clienteRepository.findById(1L)).thenReturn(
-      Optional.of(mock(Cliente.class))
+    when(
+      clienteRepository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
+    ).thenReturn(Optional.of(mock(Cliente.class)));
+    when(alunoService.obterEntidadePorIdECurso(1L, 1L)).thenReturn(
+      mock(Aluno.class)
     );
-    when(alunoService.obterEntidadePorId(1L)).thenReturn(mock(Aluno.class));
-    when(cursoRepository.findById(1L)).thenReturn(
+    when(cursoRepository.findByIdAndAtivoTrue(1L)).thenReturn(
       Optional.of(mock(Curso.class))
     );
-    when(unidadeRepository.findById(1L)).thenReturn(
+    when(unidadeRepository.findByIdAndAtivoTrue(1L)).thenReturn(
       Optional.of(mock(Unidade.class))
     );
 
@@ -222,14 +235,16 @@ class AgendamentoServiceTest {
       dataComercialValida
     );
 
-    when(clienteRepository.findById(1L)).thenReturn(
-      Optional.of(mock(Cliente.class))
+    when(
+      clienteRepository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
+    ).thenReturn(Optional.of(mock(Cliente.class)));
+    when(alunoService.obterEntidadePorIdECurso(1L, 1L)).thenReturn(
+      mock(Aluno.class)
     );
-    when(alunoService.obterEntidadePorId(1L)).thenReturn(mock(Aluno.class));
-    when(cursoRepository.findById(1L)).thenReturn(
+    when(cursoRepository.findByIdAndAtivoTrue(1L)).thenReturn(
       Optional.of(mock(Curso.class))
     );
-    when(unidadeRepository.findById(1L)).thenReturn(
+    when(unidadeRepository.findByIdAndAtivoTrue(1L)).thenReturn(
       Optional.of(mock(Unidade.class))
     );
 
@@ -285,10 +300,16 @@ class AgendamentoServiceTest {
     var cursoMock = mock(Curso.class);
     var unidadeMock = mock(Unidade.class);
 
-    when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteMock));
-    when(alunoService.obterEntidadePorId(1L)).thenReturn(alunoMock);
-    when(cursoRepository.findById(1L)).thenReturn(Optional.of(cursoMock));
-    when(unidadeRepository.findById(1L)).thenReturn(Optional.of(unidadeMock));
+    when(
+      clienteRepository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
+    ).thenReturn(Optional.of(clienteMock));
+    when(alunoService.obterEntidadePorIdECurso(1L, 1L)).thenReturn(alunoMock);
+    when(cursoRepository.findByIdAndAtivoTrue(1L)).thenReturn(
+      Optional.of(cursoMock)
+    );
+    when(unidadeRepository.findByIdAndAtivoTrue(1L)).thenReturn(
+      Optional.of(unidadeMock)
+    );
 
     var s1 = mock(Servico.class);
     when(s1.getValor()).thenReturn(new BigDecimal("100.00"));
@@ -315,6 +336,7 @@ class AgendamentoServiceTest {
     when(agendamentoMock.getDataHora()).thenReturn(
       LocalDateTime.now().plusDays(3)
     );
+    when(agendamentoMock.getStatus()).thenReturn(StatusAgendamento.AGENDADO);
     when(repository.findById(1L)).thenReturn(Optional.of(agendamentoMock));
 
     Assertions.assertDoesNotThrow(() ->
@@ -332,6 +354,7 @@ class AgendamentoServiceTest {
     when(agendamentoMock.getDataHora()).thenReturn(
       LocalDateTime.now().plusHours(2)
     );
+    when(agendamentoMock.getStatus()).thenReturn(StatusAgendamento.AGENDADO);
     when(repository.findById(1L)).thenReturn(Optional.of(agendamentoMock));
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
@@ -341,5 +364,434 @@ class AgendamentoServiceTest {
       "Cancelamento exige 24h de antecedência.",
       excecao.getMessage()
     );
+  }
+
+  @Test
+  @DisplayName("Deveria atualizar um agendamento com sucesso")
+  void cenarioAtualizarAgendamentoComSucesso() {
+    var novaData = LocalDateTime.now()
+      .plusWeeks(1)
+      .with(DayOfWeek.TUESDAY)
+      .withHour(14)
+      .withMinute(0);
+
+    var dados = new AtualizarAgendamentoDTO(2L, 3L, 4L, List.of(5L), novaData);
+
+    var agendamento = mock(Agendamento.class);
+    var cliente = mock(Cliente.class);
+    var aluno = mock(Aluno.class);
+    var curso = mock(Curso.class);
+    var unidade = mock(Unidade.class);
+    var servico = mock(Servico.class);
+    var usuarioCliente = mock(Usuario.class);
+    var usuarioAluno = mock(Usuario.class);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getStatus()).thenReturn(StatusAgendamento.AGENDADO);
+    when(agendamento.getId()).thenReturn(1L);
+    when(agendamento.getCliente()).thenReturn(cliente);
+    when(cliente.getId()).thenReturn(1L);
+    when(cliente.getUsuario()).thenReturn(usuarioCliente);
+    when(usuarioCliente.getNome()).thenReturn("Cliente Teste");
+
+    when(alunoService.obterEntidadePorIdECurso(2L, 3L)).thenReturn(aluno);
+    when(cursoRepository.findByIdAndAtivoTrue(3L)).thenReturn(
+      Optional.of(curso)
+    );
+    when(curso.getId()).thenReturn(3L);
+    when(curso.getNome()).thenReturn("Curso Teste");
+    when(aluno.getId()).thenReturn(2L);
+    when(aluno.getUsuario()).thenReturn(usuarioAluno);
+    when(usuarioAluno.getNome()).thenReturn("Aluno Teste");
+
+    when(unidadeRepository.findByIdAndAtivoTrue(4L)).thenReturn(
+      Optional.of(unidade)
+    );
+    when(unidade.getNome()).thenReturn("Unidade Teste");
+
+    when(servicoService.buscarServicosValidos(List.of(5L))).thenReturn(
+      List.of(servico)
+    );
+    when(servico.getValor()).thenReturn(new BigDecimal("100.00"));
+
+    when(agendamento.getAluno()).thenReturn(aluno);
+    when(agendamento.getCurso()).thenReturn(curso);
+    when(agendamento.getUnidade()).thenReturn(unidade);
+    when(agendamento.getDataHora()).thenReturn(novaData);
+    when(agendamento.getValorNoAto()).thenReturn(new BigDecimal("100.00"));
+
+    var resultado = agendamentoService.atualizar(1L, dados);
+
+    assertNotNull(resultado);
+    verify(agendamento).atualizar(
+      aluno,
+      curso,
+      unidade,
+      List.of(servico),
+      novaData,
+      new BigDecimal("100.00")
+    );
+  }
+
+  @Test
+  @DisplayName("Deveria recusar atualização sem nenhum campo")
+  void cenarioAtualizarSemAlteracoes() {
+    var dados = new AtualizarAgendamentoDTO(null, null, null, null, null);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      agendamentoService.atualizar(1L, dados)
+    );
+
+    assertEquals(
+      "Informe pelo menos um campo para atualizar o agendamento.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(repository);
+  }
+
+  @Test
+  @DisplayName("Deveria recusar alteração de agendamento cancelado")
+  void cenarioAtualizarAgendamentoCancelado() {
+    var agendamento = mock(Agendamento.class);
+    var dados = new AtualizarAgendamentoDTO(
+      null,
+      null,
+      null,
+      null,
+      LocalDateTime.now().plusDays(2)
+    );
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getStatus()).thenReturn(StatusAgendamento.CANCELADO);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      agendamentoService.atualizar(1L, dados)
+    );
+
+    assertEquals(
+      "Somente agendamentos com status AGENDADO podem ser alterados.",
+      erro.getMessage()
+    );
+    verify(agendamento, never()).atualizar(
+      any(),
+      any(),
+      any(),
+      anyList(),
+      any(),
+      any()
+    );
+  }
+
+  @Test
+  @DisplayName("Deveria recusar aluno que não pertence ao curso")
+  void cenarioAtualizarComAlunoDeOutroCurso() {
+    var agendamento = mock(Agendamento.class);
+    var cursoSelecionado = mock(Curso.class);
+
+    var dados = new AtualizarAgendamentoDTO(2L, 3L, null, null, null);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getStatus()).thenReturn(StatusAgendamento.AGENDADO);
+    when(cursoRepository.findByIdAndAtivoTrue(3L)).thenReturn(
+      Optional.of(cursoSelecionado)
+    );
+    when(cursoSelecionado.getId()).thenReturn(3L);
+    when(alunoService.obterEntidadePorIdECurso(2L, 3L)).thenThrow(
+      new ValidacaoException(
+        "O aluno informado não pertence ao curso selecionado."
+      )
+    );
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      agendamentoService.atualizar(1L, dados)
+    );
+
+    assertEquals(
+      "O aluno informado não pertence ao curso selecionado.",
+      erro.getMessage()
+    );
+  }
+
+  @Test
+  @DisplayName("Deveria ignorar o próprio ID ao validar conflito")
+  void cenarioAtualizarComConflitoDeAluno() {
+    var novaData = LocalDateTime.now()
+      .plusWeeks(1)
+      .with(DayOfWeek.TUESDAY)
+      .withHour(14)
+      .withMinute(0);
+
+    var agendamento = mock(Agendamento.class);
+    var cliente = mock(Cliente.class);
+    var aluno = mock(Aluno.class);
+    var curso = mock(Curso.class);
+
+    var dados = new AtualizarAgendamentoDTO(null, null, null, null, novaData);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getStatus()).thenReturn(StatusAgendamento.AGENDADO);
+    when(agendamento.getId()).thenReturn(1L);
+    when(agendamento.getCliente()).thenReturn(cliente);
+    when(cliente.getId()).thenReturn(1L);
+    when(agendamento.getAluno()).thenReturn(aluno);
+    when(aluno.getId()).thenReturn(2L);
+    when(agendamento.getCurso()).thenReturn(curso);
+    when(agendamento.getServicos()).thenReturn(List.of());
+
+    when(
+      repository.existsByAlunoIdAndDataHoraAndAtivoTrueAndIdNot(
+        2L,
+        novaData,
+        1L
+      )
+    ).thenReturn(true);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      agendamentoService.atualizar(1L, dados)
+    );
+
+    assertEquals(
+      "O aluno já possui agendamento neste horário.",
+      erro.getMessage()
+    );
+  }
+
+  @Test
+  @DisplayName("Deveria concluir agendamento realizado")
+  void cenarioConcluirAgendamentoComSucesso() {
+    var agendamento = mock(Agendamento.class);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getStatus()).thenReturn(StatusAgendamento.AGENDADO);
+    when(agendamento.getDataHora()).thenReturn(
+      LocalDateTime.now().minusHours(1)
+    );
+
+    agendamentoService.concluir(1L);
+
+    verify(agendamento).concluir();
+  }
+
+  @Test
+  @DisplayName("Deveria recusar conclusão antes do horário marcado")
+  void cenarioConcluirAntesDoHorario() {
+    var agendamento = mock(Agendamento.class);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getStatus()).thenReturn(StatusAgendamento.AGENDADO);
+    when(agendamento.getDataHora()).thenReturn(
+      LocalDateTime.now().plusHours(1)
+    );
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      agendamentoService.concluir(1L)
+    );
+
+    assertEquals(
+      "Não é possível concluir um agendamento antes do horário marcado.",
+      erro.getMessage()
+    );
+    verify(agendamento, never()).concluir();
+  }
+
+  @Test
+  @DisplayName("Deveria recusar conclusão de agendamento cancelado")
+  void cenarioConcluirAgendamentoCancelado() {
+    var agendamento = mock(Agendamento.class);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getStatus()).thenReturn(StatusAgendamento.CANCELADO);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      agendamentoService.concluir(1L)
+    );
+
+    assertEquals(
+      "Somente agendamentos com status AGENDADO podem ser concluídos.",
+      erro.getMessage()
+    );
+    verify(agendamento, never()).concluir();
+  }
+
+  @Test
+  @DisplayName("Deveria impedir cliente de concluir agendamento")
+  void cenarioClienteNaoPodeConcluirAgendamento() {
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_CLIENTE")))
+      .when(usuarioLogado)
+      .getAuthorities();
+
+    var agendamento = mock(Agendamento.class);
+    var aluno = mock(Aluno.class);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getAluno()).thenReturn(aluno);
+    when(aluno.getId()).thenReturn(2L);
+
+    assertThrows(AccessDeniedException.class, () ->
+      agendamentoService.concluir(1L)
+    );
+
+    verify(agendamento, never()).concluir();
+  }
+
+  @Test
+  @DisplayName("Deveria listar agendamentos dos perfis cliente e aluno")
+  void cenarioListarParaUsuarioComMultiplosPerfis() {
+    doReturn(
+      List.of(
+        new SimpleGrantedAuthority("ROLE_CLIENTE"),
+        new SimpleGrantedAuthority("ROLE_ALUNO")
+      )
+    )
+      .when(usuarioLogado)
+      .getAuthorities();
+
+    var paginacao = Pageable.unpaged();
+
+    when(repository.findAllVinculadosAoUsuario(1L, null, paginacao)).thenReturn(
+      Page.empty(paginacao)
+    );
+
+    var resultado = agendamentoService.listar(paginacao, null);
+
+    assertTrue(resultado.isEmpty());
+    verify(repository).findAllVinculadosAoUsuario(1L, null, paginacao);
+    verify(repository, never()).findAll(paginacao);
+  }
+
+  @Test
+  @DisplayName("Deveria permitir que funcionário liste todos os agendamentos")
+  void cenarioListarTodosParaFuncionario() {
+    var paginacao = Pageable.unpaged();
+
+    when(repository.findAll(paginacao)).thenReturn(Page.empty(paginacao));
+
+    var resultado = agendamentoService.listar(paginacao, null);
+
+    assertTrue(resultado.isEmpty());
+    verify(repository).findAll(paginacao);
+    verify(repository, never()).findAllVinculadosAoUsuario(any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("Deveria recusar listagem para usuário sem perfil permitido")
+  void cenarioListarSemPerfilPermitido() {
+    doReturn(List.of()).when(usuarioLogado).getAuthorities();
+
+    assertThrows(AccessDeniedException.class, () ->
+      agendamentoService.listar(Pageable.unpaged(), null)
+    );
+
+    verifyNoInteractions(repository);
+  }
+
+  @Test
+  @DisplayName("Deveria filtrar agendamentos por status para funcionário")
+  void cenarioFiltrarPorStatusParaFuncionario() {
+    var paginacao = Pageable.unpaged();
+
+    when(
+      repository.findAllByStatus(StatusAgendamento.CONCLUIDO, paginacao)
+    ).thenReturn(Page.empty(paginacao));
+
+    var resultado = agendamentoService.listar(
+      paginacao,
+      StatusAgendamento.CONCLUIDO
+    );
+
+    assertTrue(resultado.isEmpty());
+    verify(repository).findAllByStatus(StatusAgendamento.CONCLUIDO, paginacao);
+    verify(repository, never()).findAll(paginacao);
+  }
+
+  @Test
+  @DisplayName("Deveria filtrar apenas agendamentos vinculados ao usuário")
+  void cenarioFiltrarPorStatusParaCliente() {
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_CLIENTE")))
+      .when(usuarioLogado)
+      .getAuthorities();
+
+    var paginacao = Pageable.unpaged();
+
+    when(
+      repository.findAllVinculadosAoUsuario(
+        1L,
+        StatusAgendamento.AGENDADO,
+        paginacao
+      )
+    ).thenReturn(Page.empty(paginacao));
+
+    var resultado = agendamentoService.listar(
+      paginacao,
+      StatusAgendamento.AGENDADO
+    );
+
+    assertTrue(resultado.isEmpty());
+    verify(repository).findAllVinculadosAoUsuario(
+      1L,
+      StatusAgendamento.AGENDADO,
+      paginacao
+    );
+  }
+
+  @Test
+  @DisplayName("Deveria permitir que o cliente cancele o próprio agendamento")
+  void cenarioClienteCancelaProprioAgendamento() {
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_CLIENTE")))
+      .when(usuarioLogado)
+      .getAuthorities();
+
+    var agendamento = mock(Agendamento.class);
+    var cliente = mock(Cliente.class);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getCliente()).thenReturn(cliente);
+    when(cliente.getId()).thenReturn(1L);
+    when(agendamento.getStatus()).thenReturn(StatusAgendamento.AGENDADO);
+    when(agendamento.getDataHora()).thenReturn(LocalDateTime.now().plusDays(3));
+
+    agendamentoService.cancelar(1L, "Mudança de planos");
+
+    verify(agendamento).cancelar("Mudança de planos");
+  }
+
+  @Test
+  @DisplayName("Deveria impedir aluno de cancelar agendamento")
+  void cenarioAlunoNaoPodeCancelarAgendamento() {
+    doReturn(List.of(new SimpleGrantedAuthority("ROLE_ALUNO")))
+      .when(usuarioLogado)
+      .getAuthorities();
+
+    var agendamento = mock(Agendamento.class);
+    var cliente = mock(Cliente.class);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getCliente()).thenReturn(cliente);
+    when(cliente.getId()).thenReturn(2L);
+
+    assertThrows(AccessDeniedException.class, () ->
+      agendamentoService.cancelar(1L, "Cancelamento indevido")
+    );
+
+    verify(agendamento, never()).cancelar(any());
+  }
+
+  @Test
+  @DisplayName("Deveria impedir o cancelamento repetido")
+  void cenarioCancelarAgendamentoJaCancelado() {
+    var agendamento = mock(Agendamento.class);
+
+    when(repository.findById(1L)).thenReturn(Optional.of(agendamento));
+    when(agendamento.getStatus()).thenReturn(StatusAgendamento.CANCELADO);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      agendamentoService.cancelar(1L, "Novo cancelamento")
+    );
+
+    assertEquals(
+      "Somente agendamentos com status AGENDADO podem ser cancelados.",
+      erro.getMessage()
+    );
+    verify(agendamento, never()).cancelar(any());
   }
 }

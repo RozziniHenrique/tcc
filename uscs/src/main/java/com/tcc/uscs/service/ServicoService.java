@@ -25,9 +25,17 @@ public class ServicoService {
       throw new ValidacaoException("A lista de serviços não pode estar vazia.");
     }
 
-    List<Servico> servicos = repository.findAllById(ids);
+    var idsUnicos = ids.stream().distinct().toList();
 
-    if (servicos.size() != ids.size()) {
+    if (idsUnicos.size() != ids.size()) {
+      throw new ValidacaoException(
+        "A lista de serviços não pode conter IDs duplicados."
+      );
+    }
+
+    var servicos = repository.findAllByIdInAndAtivoTrue(idsUnicos);
+
+    if (servicos.size() != idsUnicos.size()) {
       throw new ValidacaoException(
         "Um ou mais serviços informados não foram encontrados ou estão inativos!"
       );
