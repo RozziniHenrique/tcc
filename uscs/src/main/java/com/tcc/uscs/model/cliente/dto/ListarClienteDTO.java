@@ -15,7 +15,7 @@ public record ListarClienteDTO(
       cliente.getUsuario().getNome(),
       cliente.getUsuario().getEmail(),
       cliente.getUsuario().getTelefone(),
-      cliente.getUsuario().getAtivo()
+      cliente.getAtivo()
     );
   }
 }

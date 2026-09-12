@@ -12,6 +12,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
   Page<Usuario> findAllByAtivoTrue(Pageable paginacao);
 
+  boolean existsByCpf(String cpf);
+
+  boolean existsByEmail(String email);
+
   UserDetails findByEmail(String email);
 
   Optional<Usuario> findByEmailAndAtivoTrue(String email);

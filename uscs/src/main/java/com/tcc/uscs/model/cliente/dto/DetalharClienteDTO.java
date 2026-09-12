@@ -8,6 +8,8 @@ public record DetalharClienteDTO(
   String email,
   String telefone,
   String cpf,
+  String endereco,
+  String observacoes,
   Boolean ativo
 ) {
   public DetalharClienteDTO(Cliente cliente) {
@@ -17,7 +19,9 @@ public record DetalharClienteDTO(
       cliente.getUsuario().getEmail(),
       cliente.getUsuario().getTelefone(),
       cliente.getUsuario().getCpf(),
-      cliente.getUsuario().getAtivo()
+      cliente.getUsuario().getEnderecoCompleto(),
+      cliente.getObservacoes(),
+      cliente.getAtivo()
     );
   }
 }

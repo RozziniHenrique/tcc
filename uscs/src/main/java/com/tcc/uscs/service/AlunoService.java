@@ -9,6 +9,7 @@ import com.tcc.uscs.model.aluno.dto.DetalharAlunoDTO;
 import com.tcc.uscs.model.aluno.dto.ListarAlunoDTO;
 import com.tcc.uscs.model.usuario.Usuario;
 import com.tcc.uscs.repository.AlunoRepository;
+import com.tcc.uscs.repository.CursoRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.StoredProcedureQuery;
@@ -29,9 +30,12 @@ public class AlunoService {
   private final AlunoRepository repository;
   private final EntityManager entityManager;
   private final PasswordEncoder passwordEncoder;
+  private final CadastroUsuarioValidator cadastroUsuarioValidator;
+  private final CursoRepository cursoRepository;
 
   public Long buscarAlunoAleatorio(Long idCurso) {
-    var disponiveis = repository.findAllByCursoIdAndUsuarioAtivoTrue(idCurso);
+    var disponiveis =
+      repository.findAllByCursoIdAndAtivoTrueAndUsuarioAtivoTrue(idCurso);
 
     if (disponiveis.isEmpty()) {
       throw new ValidacaoException("Nenhum aluno disponível para este curso.");
@@ -44,7 +48,7 @@ public class AlunoService {
 
   public Aluno obterEntidadePorId(Long id) {
     return repository
-      .findById(id)
+      .findByIdAndAtivoTrueAndUsuarioAtivoTrue(id)
       .orElseThrow(() ->
         new ValidacaoException("Aluno não encontrado ou inativo!")
       );
@@ -52,6 +56,7 @@ public class AlunoService {
 
   @Transactional
   public DetalharAlunoDTO cadastrar(CadastrarAlunoDTO dados) {
+    cadastroUsuarioValidator.validarNovoUsuario(dados.cpf(), dados.email());
     String senhaCriptografada = passwordEncoder.encode(dados.senha());
 
     StoredProcedureQuery query = entityManager.createStoredProcedureQuery(
@@ -89,7 +94,7 @@ public class AlunoService {
 
   public Page<ListarAlunoDTO> listar(Pageable paginacao) {
     return repository
-      .findAllByUsuarioAtivoTrue(paginacao)
+      .findAllByAtivoTrueAndUsuarioAtivoTrue(paginacao)
       .map(ListarAlunoDTO::new);
   }
 
@@ -103,6 +108,15 @@ public class AlunoService {
     validarPosseDoRecurso(id);
     var aluno = obterEntidadePorId(id);
     aluno.atualizar(dados);
+    if (dados.idCurso() != null) {
+      var curso = cursoRepository
+        .findByIdAndAtivoTrue(dados.idCurso())
+        .orElseThrow(() ->
+          new ValidacaoException("Curso não encontrado ou inativo.")
+        );
+
+      aluno.setCurso(curso);
+    }
     return new DetalharAlunoDTO(aluno);
   }
 

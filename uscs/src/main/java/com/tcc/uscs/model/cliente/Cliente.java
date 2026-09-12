@@ -1,6 +1,7 @@
 package com.tcc.uscs.model.cliente;
 
 import com.tcc.uscs.model.cliente.dto.AtualizarClienteDTO;
+import com.tcc.uscs.model.usuario.TipoUsuario;
 import com.tcc.uscs.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
@@ -24,9 +25,13 @@ public class Cliente {
 
   private String observacoes;
 
+  @Column(nullable = false)
+  private Boolean ativo;
+
   public Cliente(Usuario usuario, String observacoes) {
     this.usuario = usuario;
     this.observacoes = observacoes;
+    this.ativo = true;
   }
 
   public void atualizar(AtualizarClienteDTO dados) {
@@ -43,6 +48,16 @@ public class Cliente {
   }
 
   public void excluir() {
-    this.usuario.desativar();
+    this.ativo = false;
+    this.usuario.removerPerfil(TipoUsuario.CLIENTE);
+  }
+
+  public void reativar(String observacoes) {
+    this.ativo = true;
+    this.usuario.adicionarPerfil(TipoUsuario.CLIENTE);
+
+    if (observacoes != null) {
+      this.observacoes = observacoes;
+    }
   }
 }

@@ -1,6 +1,7 @@
 package com.tcc.uscs.model.funcionario;
 
 import com.tcc.uscs.model.funcionario.dto.AtualizarFuncionarioDTO;
+import com.tcc.uscs.model.usuario.TipoUsuario;
 import com.tcc.uscs.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
@@ -25,9 +26,13 @@ public class Funcionario {
   @Enumerated(EnumType.STRING)
   private Funcao funcao;
 
+  @Column(nullable = false)
+  private Boolean ativo;
+
   public Funcionario(Usuario usuario, Funcao funcao) {
     this.usuario = usuario;
     this.funcao = funcao;
+    this.ativo = true;
   }
 
   public void atualizar(AtualizarFuncionarioDTO dados) {
@@ -44,6 +49,13 @@ public class Funcionario {
   }
 
   public void excluir() {
-    this.usuario.desativar();
+    this.ativo = false;
+    this.usuario.removerPerfil(TipoUsuario.FUNCIONARIO);
+  }
+
+  public void reativar(Funcao funcao) {
+    this.ativo = true;
+    this.funcao = funcao;
+    this.usuario.adicionarPerfil(TipoUsuario.FUNCIONARIO);
   }
 }

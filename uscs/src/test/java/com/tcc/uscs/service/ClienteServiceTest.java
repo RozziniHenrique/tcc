@@ -54,6 +54,9 @@ class ClienteServiceTest {
   @Mock
   private StoredProcedureQuery storedProcedureQuery;
 
+  @Mock
+  private CadastroUsuarioValidator cadastroUsuarioValidator;
+
   private void mockUsuarioLogado(Long id, String role) {
     lenient()
       .when(securityContext.getAuthentication())
@@ -78,7 +81,9 @@ class ClienteServiceTest {
     "Deveria lançar erro ao tentar obter cliente inexistente ou inativo"
   )
   void cenarioObterEntidadeInexistente() {
-    when(repository.findById(1L)).thenReturn(Optional.empty());
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.empty()
+    );
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       clienteService.obterEntidadePorId(1L)
@@ -107,7 +112,9 @@ class ClienteServiceTest {
     var clienteMock = mock(Cliente.class);
     var usuarioMock = mock(Usuario.class);
     when(clienteMock.getUsuario()).thenReturn(usuarioMock);
-    when(repository.findById(1L)).thenReturn(Optional.of(clienteMock));
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(clienteMock)
+    );
 
     var resultado = clienteService.cadastrar(dtoCadastro);
 
@@ -125,7 +132,9 @@ class ClienteServiceTest {
     var clienteMock = mock(Cliente.class);
     var usuarioMock = mock(Usuario.class);
     when(clienteMock.getUsuario()).thenReturn(usuarioMock);
-    when(repository.findById(1L)).thenReturn(Optional.of(clienteMock));
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(clienteMock)
+    );
 
     var resultado = clienteService.detalhar(1L);
 
@@ -140,7 +149,9 @@ class ClienteServiceTest {
     var clienteMock = mock(Cliente.class);
     var usuarioMock = mock(Usuario.class);
     when(clienteMock.getUsuario()).thenReturn(usuarioMock);
-    when(repository.findById(1L)).thenReturn(Optional.of(clienteMock));
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(clienteMock)
+    );
 
     var resultado = clienteService.detalhar(1L);
 
@@ -174,7 +185,9 @@ class ClienteServiceTest {
     var usuarioMock = mock(Usuario.class);
 
     when(clienteMock.getUsuario()).thenReturn(usuarioMock);
-    when(repository.findById(1L)).thenReturn(Optional.of(clienteMock));
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(clienteMock)
+    );
 
     var resultado = clienteService.atualizar(1L, dtoAtualizar);
 
@@ -186,7 +199,9 @@ class ClienteServiceTest {
   @DisplayName("Deveria excluir cliente chamando o método de exclusão lógica")
   void cenarioExcluirComSucesso() {
     var clienteMock = mock(Cliente.class);
-    when(repository.findById(1L)).thenReturn(Optional.of(clienteMock));
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(clienteMock)
+    );
 
     clienteService.excluir(1L);
 

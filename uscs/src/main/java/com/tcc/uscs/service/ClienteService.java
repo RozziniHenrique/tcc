@@ -28,10 +28,11 @@ public class ClienteService {
   private final ClienteRepository repository;
   private final EntityManager entityManager;
   private final PasswordEncoder passwordEncoder;
+  private final CadastroUsuarioValidator cadastroUsuarioValidator;
 
   public Cliente obterEntidadePorId(Long id) {
     return repository
-      .findById(id)
+      .findByIdAndAtivoTrueAndUsuarioAtivoTrue(id)
       .orElseThrow(() ->
         new ValidacaoException("Cliente não encontrado ou inativo!")
       );
@@ -39,6 +40,7 @@ public class ClienteService {
 
   @Transactional
   public DetalharClienteDTO cadastrar(CadastrarClienteDTO dados) {
+    cadastroUsuarioValidator.validarNovoUsuario(dados.cpf(), dados.email());
     String senhaCriptografada = passwordEncoder.encode(dados.senha());
 
     StoredProcedureQuery query = entityManager.createStoredProcedureQuery(
@@ -76,7 +78,7 @@ public class ClienteService {
 
   public Page<ListarClienteDTO> listar(Pageable paginacao) {
     return repository
-      .findAllByUsuarioAtivoTrue(paginacao)
+      .findAllByAtivoTrueAndUsuarioAtivoTrue(paginacao)
       .map(ListarClienteDTO::new);
   }
 

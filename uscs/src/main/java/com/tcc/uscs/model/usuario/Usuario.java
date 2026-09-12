@@ -82,6 +82,23 @@ public class Usuario implements UserDetails {
     this.ativo = true;
   }
 
+  public boolean possuiPerfil(TipoUsuario perfil) {
+    return perfis.contains(perfil);
+  }
+
+  public void adicionarPerfil(TipoUsuario perfil) {
+    perfis.add(perfil);
+    ativo = true;
+  }
+
+  public void removerPerfil(TipoUsuario perfil) {
+    perfis.remove(perfil);
+
+    if (perfis.isEmpty()) {
+      ativo = false;
+    }
+  }
+
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
     Set<GrantedAuthority> authorities = this.perfis.stream()
@@ -90,7 +107,11 @@ public class Usuario implements UserDetails {
       )
       .collect(java.util.stream.Collectors.toSet());
 
-    if (funcionario != null && funcionario.getFuncao() != null) {
+    if (
+      perfis.contains(TipoUsuario.FUNCIONARIO) &&
+      funcionario != null &&
+      funcionario.getFuncao() != null
+    ) {
       authorities.add(
         new SimpleGrantedAuthority("ROLE_" + funcionario.getFuncao().name())
       );
