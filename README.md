@@ -20,7 +20,8 @@ Sistema de gestão integrado para escola de beleza/salão, cobrindo o ciclo comp
 - Resposta genérica no fluxo de recuperação para reduzir enumeração de usuários.
 - Erros REST em formato padronizado.
 - Remoção do `StoredProcedureHelper` duplicado.
-- Migration V10 para refresh tokens e tentativas de recuperação.
+- Migrations V10 a V12 para segurança, cadastro seguro e controle de status dos agendamentos.
+- Paginação com formato JSON estável para integração com Flutter.
 
 ---
 
@@ -55,7 +56,7 @@ O sistema gerencia o fluxo completo de uma escola de beleza com múltiplas unida
 - **Stored Procedures** para cadastro transacional de usuários no banco
 - **Documentação interativa** via Swagger UI com autenticação JWT integrada
 - **Tratamento global de erros** com respostas padronizadas por tipo de exceção
-- **Versionamento evolutivo** do banco de dados com Flyway (10 migrations)
+- **Versionamento evolutivo** do banco de dados com Flyway (12 migrations)
 
 ---
 
@@ -213,6 +214,8 @@ agendamento_servicos (N:N)
 - `V8` — Criação dos tokens de recuperação de senha
 - `V9` — Criação do sistema de avaliações
 - `V10` — Refresh tokens e controle de tentativas de recuperação de senha
+- `V11` — Cadastro seguro de usuários, múltiplos perfis e exclusão lógica de clientes, alunos e funcionários
+- `V12` — Status dos agendamentos e proteção contra conflitos de horário
 
 ---
 
@@ -247,22 +250,29 @@ Senhas armazenadas com **BCrypt** via `BCryptPasswordEncoder`.
 
 ## 🧪 Testes
 
-A aplicação possui **50 testes automatizados**, implementados com **JUnit 5, Mockito e Spring Security Test**.
+A aplicação possui **176 testes automatizados**, implementados com **JUnit 5, Mockito, Spring Security Test e H2**.
 
-| Área testada            | Quantidade |
-| ----------------------- | ---------: |
-| AgendamentoController   |          7 |
-| AutenticacaoController  |          3 |
-| AgendamentoService      |          7 |
-| AlunoService            |          5 |
-| ClienteService          |          7 |
-| FuncionarioService      |          5 |
-| RecuperacaoSenhaService |          6 |
-| MeuPerfilService        |          4 |
-| RefreshTokenService     |          6 |
-| **Total**               |     **50** |
+| Categoria       | Quantidade |
+| --------------- | ---------: |
+| Controllers     |         44 |
+| Services        |        124 |
+| Repositories    |          4 |
+| Models e perfis |          4 |
+| **Total**       |    **176** |
 
-Os testes cobrem autenticação, renovação e revogação de tokens, recuperação de senha, perfil do usuário, regras de agendamento e operações de alunos, clientes e funcionários.
+Os testes cobrem:
+
+- autenticação, refresh token e logout;
+- recuperação e redefinição de senha;
+- cadastro seguro e múltiplos perfis;
+- clientes, alunos e funcionários;
+- cursos, serviços e unidades;
+- criação, alteração, cancelamento e conclusão de agendamentos;
+- prevenção de conflitos de horário;
+- relatórios em JSON, CSV e PDF;
+- avaliações e avaliações pendentes;
+- autorização e validação de posse dos recursos;
+- serialização estável das respostas paginadas.
 
 ```bash
 # Windows — Git Bash
@@ -315,6 +325,21 @@ Clique em **Authorize** e insira o token JWT obtido no `POST /login`.
 
 ---
 
+### Paginação
+
+As rotas de listagem retornam paginação em formato JSON estável:
+
+```json
+{
+  "content": [],
+  "page": {
+    "size": 20,
+    "number": 0,
+    "totalElements": 0,
+    "totalPages": 0
+  }
+}
+
 ## 📊 Endpoints Principais
 
 | Método                | Endpoint                       | Acesso                                 | Descrição                                        |
@@ -350,3 +375,4 @@ Clique em **Authorize** e insira o token JWT obtido no `POST /login`.
 ---
 
 > Projeto acadêmico em andamento — TCC do curso de Análise e Desenvolvimento de Sistemas (ADS), USCS. Previsão de conclusão: junho/2027.
+```

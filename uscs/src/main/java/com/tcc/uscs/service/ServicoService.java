@@ -57,16 +57,20 @@ public class ServicoService {
 
   public DetalharServicoDTO detalhar(Long id) {
     var servico = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Serviço não encontrado!"));
+      .findByIdAndAtivoTrue(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Serviço não encontrado ou inativo!")
+      );
     return new DetalharServicoDTO(servico);
   }
 
   @Transactional
   public DetalharServicoDTO atualizar(Long id, AtualizarServicoDTO dados) {
     var servico = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Serviço não encontrado!"));
+      .findByIdAndAtivoTrue(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Serviço não encontrado ou inativo!")
+      );
     servico.atualizar(dados);
     return new DetalharServicoDTO(servico);
   }
@@ -74,8 +78,10 @@ public class ServicoService {
   @Transactional
   public void excluir(Long id) {
     var servico = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Serviço não encontrado!"));
+      .findByIdAndAtivoTrue(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Serviço não encontrado ou inativo!")
+      );
     servico.excluir();
   }
 }
