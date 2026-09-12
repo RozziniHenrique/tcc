@@ -1,8 +1,26 @@
-# 💈 Sistema ERP de Agendamento — TCC USCS
+# 💈 STFER API v2.1.0 — Sistema de Gestão e Agendamento
 
-> API REST desenvolvida em **Java com Spring Boot 3.5** como Trabalho de Conclusão de Curso na USCS — Universidade Municipal de São Caetano do Sul.
+> API REST desenvolvida em **Java 25 com Spring Boot 3.5.13** como Trabalho de Conclusão de Curso na USCS — Universidade Municipal de São Caetano do Sul.
 
 Sistema de gestão integrado para escola de beleza/salão, cobrindo o ciclo completo de operação: **agendamentos, clientes, alunos, funcionários, cursos, serviços e unidades**.
+
+---
+
+> **Versão 2.1.0** — primeira evolução estrutural do TCC, focada em segurança, autenticação e preparação para o futuro app mobile e dashboard gerencial.
+
+### Novidades da v2.1
+
+- Java 25 padronizado no Maven.
+- JWT com expiração configurável e segredo obrigatório por variável de ambiente.
+- Refresh token rotativo e logout.
+- RBAC por função de funcionário (`ATENDENTE`, `PROFESSOR`, `GESTOR`, `SUPERVISOR`, `ADMIN`).
+- Listagens de clientes/alunos restritas a funcionários autorizados.
+- Novo endpoint `GET /me` e `PUT /me`.
+- Recuperação de senha com código de 6 dígitos armazenado apenas como hash.
+- Resposta genérica no fluxo de recuperação para reduzir enumeração de usuários.
+- Erros REST em formato padronizado.
+- Remoção do `StoredProcedureHelper` duplicado.
+- Migration V10 para refresh tokens e tentativas de recuperação.
 
 ---
 
@@ -33,11 +51,11 @@ O sistema gerencia o fluxo completo de uma escola de beleza com múltiplas unida
 - **Distribuição aleatória de alunos** disponíveis por curso quando não há preferência do cliente
 - **Gestão completa** de clientes, alunos, funcionários, cursos, serviços e unidades (CRUD)
 - **Autenticação e autorização** stateless com Spring Security + JWT
-- **Controle de acesso por perfil (RBAC)** com três roles: `FUNCIONARIO`, `CLIENTE` e `ALUNO`
+- **Controle de acesso (RBAC)** por perfil e função: `CLIENTE`, `ALUNO`, `FUNCIONARIO`, `ATENDENTE`, `PROFESSOR`, `GESTOR`, `SUPERVISOR` e `ADMIN`
 - **Stored Procedures** para cadastro transacional de usuários no banco
 - **Documentação interativa** via Swagger UI com autenticação JWT integrada
 - **Tratamento global de erros** com respostas padronizadas por tipo de exceção
-- **Versionamento evolutivo** do banco de dados com Flyway (5 migrations)
+- **Versionamento evolutivo** do banco de dados com Flyway (10 migrations)
 
 ---
 
@@ -57,7 +75,7 @@ src/main/java/com/tcc/uscs/
 │   │   └── dto/         # DTOs segregados por operação (Cadastrar, Listar, Detalhar, Atualizar, Cancelamento)
 │   ├── cliente/
 │   ├── aluno/
-│   ├── funcionario/     # Inclui enum Funcao: PROFESSOR, ATENDENTE, GESTOR, SUPERVISOR
+│   ├── funcionario/     # Inclui enum Funcao: PROFESSOR, ATENDENTE, GESTOR, SUPERVISOR, ADMIN
 │   ├── curso/
 │   ├── servico/
 │   ├── unidade/
@@ -67,7 +85,7 @@ src/main/java/com/tcc/uscs/
     ├── security/        # JWT Filter, TokenService, SecurityConfigurations, AutenticacaoService
     ├── springdoc/       # SpringDocConfigurations + OpenApiCustomizer global
     ├── exception/       # TratadorDeErros (@RestControllerAdvice) + exceções customizadas
-    └── util/            # StoredProcedureHelper
+    └── helper/          # StoredProcedureHelper
 ```
 
 ---
@@ -98,13 +116,13 @@ As Stored Procedures ainda aplicam validação de unicidade internamente (CPF e 
 
 Implementadas no `AgendamentoService` como métodos de validação privados antes do `save()`:
 
-| Regra | Detalhe |
-|-------|---------|
+| Regra               | Detalhe                                                                   |
+| ------------------- | ------------------------------------------------------------------------- |
 | Antecedência mínima | Agendamento deve ser criado com pelo menos **30 minutos** de antecedência |
-| Horário comercial | Apenas **Seg–Sáb**, das **08h às 19h** |
-| Conflito de aluno | Um aluno não pode ter dois agendamentos no mesmo horário |
-| Conflito de cliente | Um cliente não pode ter dois agendamentos no mesmo horário |
-| Cancelamento | Exige **24h de antecedência** e **justificativa obrigatória** |
+| Horário comercial   | Apenas **Seg–Sáb**, das **08h às 19h**                                    |
+| Conflito de aluno   | Um aluno não pode ter dois agendamentos no mesmo horário                  |
+| Conflito de cliente | Um cliente não pode ter dois agendamentos no mesmo horário                |
+| Cancelamento        | Exige **24h de antecedência** e **justificativa obrigatória**             |
 
 ---
 
@@ -131,33 +149,33 @@ public OpenApiCustomizer customerGlobalHeaderOpenApiCustomizer() {
 
 O `TratadorDeErros` (`@RestControllerAdvice`) mapeia cada tipo de exceção para um status HTTP e payload descritivo:
 
-| Exceção | Status | Situação |
-|---------|--------|----------|
-| `EntityNotFoundException` | 404 | Entidade não encontrada pelo ID |
-| `MethodArgumentNotValidException` | 400 | Falha na validação Jakarta (campos inválidos) |
-| `DataIntegrityViolationException` | 400 | Duplicidade detectada pelo JPA |
-| `PersistenceException` | 400 ou 500 | Duplicidade ou erro nas Stored Procedures |
-| `ValidacaoException` | 400 | Violação de regra de negócio |
-| `Exception` | 500 | Erro inesperado (com log) |
+| Exceção                           | Status     | Situação                                      |
+| --------------------------------- | ---------- | --------------------------------------------- |
+| `EntityNotFoundException`         | 404        | Entidade não encontrada pelo ID               |
+| `MethodArgumentNotValidException` | 400        | Falha na validação Jakarta (campos inválidos) |
+| `DataIntegrityViolationException` | 400        | Duplicidade detectada pelo JPA                |
+| `PersistenceException`            | 400 ou 500 | Duplicidade ou erro nas Stored Procedures     |
+| `ValidacaoException`              | 400        | Violação de regra de negócio                  |
+| `Exception`                       | 500        | Erro inesperado (com log)                     |
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-| Categoria | Tecnologia |
-|-----------|-----------|
-| Linguagem | Java 17+ |
-| Framework | Spring Boot 3.5.0 |
-| Segurança | Spring Security + JWT (auth0 java-jwt) |
-| Persistência | Spring Data JPA + Hibernate |
-| Banco de Dados | MySQL 8 |
-| Stored Procedures | EntityManager nativo |
-| Migrations | Flyway (flyway-core + flyway-mysql) |
-| Documentação | SpringDoc OpenAPI (Swagger UI) |
-| Validação | Jakarta Validation |
-| Build | Maven |
-| Utilitários | Lombok |
-| Testes | JUnit 5 + Mockito |
+| Categoria         | Tecnologia                             |
+| ----------------- | -------------------------------------- |
+| Linguagem         | Java 25                                |
+| Framework         | Spring Boot 3.5.13                     |
+| Segurança         | Spring Security + JWT (auth0 java-jwt) |
+| Persistência      | Spring Data JPA + Hibernate            |
+| Banco de Dados    | MySQL 8                                |
+| Stored Procedures | EntityManager nativo                   |
+| Migrations        | Flyway (flyway-core + flyway-mysql)    |
+| Documentação      | SpringDoc OpenAPI (Swagger UI)         |
+| Validação         | Jakarta Validation                     |
+| Build             | Maven                                  |
+| Utilitários       | Lombok                                 |
+| Testes            | JUnit 5 + Mockito                      |
 
 ---
 
@@ -168,7 +186,7 @@ usuarios (base)
     │
     ├──▶ clientes      (observacoes)
     ├──▶ alunos        (curso_id → cursos)
-    └──▶ funcionarios  (funcao: PROFESSOR | ATENDENTE | GESTOR | SUPERVISOR)
+    └──▶ funcionarios  (funcao: PROFESSOR | ATENDENTE | GESTOR | SUPERVISOR | ADMIN)
 
 agendamentos
     ├── cliente_id    → clientes
@@ -184,11 +202,17 @@ agendamento_servicos (N:N)
 ```
 
 **Migrations Flyway:**
-- `V1` — Criação de todas as tabelas
-- `V2` — Stored Procedures para cadastro de Cliente, Funcionário e Aluno
-- `V3` — Adição da coluna `justificativa_cancelamento` em agendamentos
-- `V4` — Criação da tabela `unidades`
-- `V5` — Criação da tabela `servicos`
+
+- `V1` — Criação das tabelas iniciais
+- `V2` — Stored Procedures para cadastro de cliente, funcionário e aluno
+- `V3` — Adição da justificativa de cancelamento nos agendamentos
+- `V4` — Criação da tabela de unidades
+- `V5` — Criação das tabelas de serviços e seus relacionamentos
+- `V6` — Implementação dos perfis de usuário
+- `V7` — Ajustes nas Stored Procedures
+- `V8` — Criação dos tokens de recuperação de senha
+- `V9` — Criação do sistema de avaliações
+- `V10` — Refresh tokens e controle de tentativas de recuperação de senha
 
 ---
 
@@ -198,17 +222,24 @@ Autenticação **stateless** via JWT — sem sessão no servidor. O `SecurityFil
 
 ### Matriz de Permissões
 
-| Endpoint | PÚBLICO | CLIENTE / ALUNO | FUNCIONARIO |
-|----------|---------|-----------------|-------------|
-| `POST /login` | ✅ | ✅ | ✅ |
-| `POST /clientes` | ✅ | — | ✅ |
-| `POST /alunos` | ✅ | — | ✅ |
-| `GET /clientes/**`, `GET /alunos/**` | — | ✅ | ✅ |
-| `PUT/DELETE /clientes/**`, `/alunos/**` | — | — | ✅ |
-| `/agendamentos/**` | — | ✅ | ✅ |
-| `/funcionarios/**` | — | — | ✅ |
-| `/cursos/**` | — | — | ✅ |
-| `GET /swagger-ui/**` | ✅ | ✅ | ✅ |
+| Endpoint                                                | Acesso                                      |
+| ------------------------------------------------------- | ------------------------------------------- |
+| `POST /login`, `/auth/login`, `/auth/refresh`           | Público                                     |
+| `POST /auth/password/**`, `/senha/**`                   | Público                                     |
+| `POST /clientes`, `/alunos`                             | Público                                     |
+| `GET /me`, `PUT /me`                                    | Usuário autenticado                         |
+| `/agendamentos/**`                                      | Usuário autenticado, com validação de posse |
+| `GET /clientes/**`, `/alunos/**`                        | Usuário autenticado, com validação de posse |
+| `GET /clientes`, `/alunos`                              | Funcionários autorizados                    |
+| `DELETE /clientes/**`, `/alunos/**`                     | GESTOR, SUPERVISOR ou ADMIN                 |
+| `GET /cursos/**`                                        | Usuário autenticado                         |
+| Escrita em `/cursos/**`                                 | PROFESSOR, GESTOR, SUPERVISOR ou ADMIN      |
+| `GET /servicos/**`, `/unidades/**`                      | Usuário autenticado                         |
+| Escrita em `/servicos/**`, `/unidades/**`               | ATENDENTE, GESTOR, SUPERVISOR ou ADMIN      |
+| `POST /avaliacoes/**`                                   | CLIENTE                                     |
+| `GET /avaliacoes/**`                                    | Usuário autenticado                         |
+| `/funcionarios/**`, `/relatorios/**`                    | GESTOR, SUPERVISOR ou ADMIN                 |
+| `/actuator/health`, `/swagger-ui/**`, `/v3/api-docs/**` | Público                                     |
 
 Senhas armazenadas com **BCrypt** via `BCryptPasswordEncoder`.
 
@@ -216,22 +247,29 @@ Senhas armazenadas com **BCrypt** via `BCryptPasswordEncoder`.
 
 ## 🧪 Testes
 
-Testes unitários implementados com **JUnit 5 + Mockito** cobrindo os cenários críticos do `AgendamentoService`:
+A aplicação possui **50 testes automatizados**, implementados com **JUnit 5, Mockito e Spring Security Test**.
 
-| Teste | Cenário |
-|-------|---------|
-| `cenarioAntecedenciaMinima` | Lança erro ao agendar com menos de 30 min de antecedência |
-| `cenarioForaHorarioComercialDomingo` | Lança erro ao agendar em domingo |
-| `cenarioConflitoHorarioAluno` | Lança erro quando aluno já tem agendamento no horário |
-| `cenarioConflitoHorarioCliente` | Lança erro quando cliente já tem agendamento no horário |
-| `cenarioAgendamentoComSucesso` | Cria agendamento e calcula valor total dos serviços corretamente |
-| `cenarioCancelarComSucesso` | Cancela agendamento com mais de 24h de antecedência |
-| `cenarioCancelarErroAntecedencia` | Lança erro ao cancelar com menos de 24h |
-| `cenarioCancelarSemJustificativa` | Lança erro ao cancelar sem justificativa |
+| Área testada            | Quantidade |
+| ----------------------- | ---------: |
+| AgendamentoController   |          7 |
+| AutenticacaoController  |          3 |
+| AgendamentoService      |          7 |
+| AlunoService            |          5 |
+| ClienteService          |          7 |
+| FuncionarioService      |          5 |
+| RecuperacaoSenhaService |          6 |
+| MeuPerfilService        |          4 |
+| RefreshTokenService     |          6 |
+| **Total**               |     **50** |
+
+Os testes cobrem autenticação, renovação e revogação de tokens, recuperação de senha, perfil do usuário, regras de agendamento e operações de alunos, clientes e funcionários.
 
 ```bash
-# Rodar os testes
-mvn test
+# Windows — Git Bash
+./mvnw.cmd clean test
+
+# Linux/macOS
+./mvnw clean test
 ```
 
 ---
@@ -239,9 +277,12 @@ mvn test
 ## 🚀 Como Executar
 
 ### Pré-requisitos
-- Java 17+
-- Maven 3.8+
-- MySQL 8+
+
+- Java 25
+- MySQL 8 ou superior
+- Git
+
+O Maven não precisa estar instalado, pois o projeto possui Maven Wrapper.
 
 ### Passos
 
@@ -251,46 +292,57 @@ git clone https://github.com/RozziniHenrique/tcc.git
 cd tcc/uscs
 
 # 2. Crie o banco de dados
-mysql -u root -p -e "CREATE DATABASE erp_salao;"
+mysql -u root -p -e "CREATE DATABASE tccuscs;"
 
-# 3. Configure src/main/resources/application.properties
-spring.datasource.url=jdbc:mysql://localhost:3306/erp_salao
-spring.datasource.username=seu_usuario
-spring.datasource.password=sua_senha
+# 3. Configure as variáveis de ambiente
+export DB_USER="root"
+export DB_PASSWORD="sua_senha"
+export JWT_SECRET="uma-chave-secreta-segura-com-pelo-menos-32-caracteres"
 
-# 4. Execute — o Flyway criará todas as tabelas e procedures automaticamente
-mvn spring-boot:run
+# 4. Execute a aplicação
+./mvnw.cmd spring-boot:run
 ```
 
+No Linux ou macOS, utilize `./mvnw` no lugar de `./mvnw.cmd`.
+
 ### Documentação interativa (Swagger UI)
+
 ```
 http://localhost:8080/swagger-ui.html
 ```
+
 Clique em **Authorize** e insira o token JWT obtido no `POST /login`.
 
 ---
 
 ## 📊 Endpoints Principais
 
-| Método | Endpoint | Role | Descrição |
-|--------|----------|------|-----------|
-| `POST` | `/login` | Público | Autenticação — retorna token JWT |
-| `POST` | `/clientes` | Público | Cadastro de cliente (via Stored Procedure) |
-| `POST` | `/alunos` | Público | Cadastro de aluno (via Stored Procedure) |
-| `POST` | `/funcionarios` | FUNCIONARIO | Cadastro de funcionário (via Stored Procedure) |
-| `POST` | `/agendamentos` | CLIENTE/ALUNO/FUNC | Cria agendamento com múltiplos serviços |
-| `GET` | `/agendamentos` | CLIENTE/ALUNO/FUNC | Lista agendamentos (paginado, ordenado por data desc) |
-| `GET` | `/agendamentos/{id}` | CLIENTE/ALUNO/FUNC | Detalha agendamento |
-| `DELETE` | `/agendamentos/{id}` | CLIENTE/ALUNO/FUNC | Cancela agendamento (exige justificativa) |
-| `GET/POST/PUT/DELETE` | `/cursos/**` | FUNCIONARIO | Gestão de cursos |
-| `GET/POST/PUT/DELETE` | `/servicos/**` | FUNCIONARIO | Gestão de serviços |
-| `GET/POST/PUT/DELETE` | `/unidades/**` | FUNCIONARIO | Gestão de unidades |
+| Método                | Endpoint                       | Acesso                                 | Descrição                                        |
+| --------------------- | ------------------------------ | -------------------------------------- | ------------------------------------------------ |
+| `POST`                | `/login` ou `/auth/login`      | Público                                | Autentica e retorna access token e refresh token |
+| `POST`                | `/auth/refresh`                | Público                                | Renova os tokens                                 |
+| `POST`                | `/auth/logout`                 | Autenticado                            | Revoga o refresh token                           |
+| `POST`                | `/auth/password/forgot`        | Público                                | Solicita código de recuperação de senha          |
+| `POST`                | `/auth/password/verify`        | Público                                | Verifica o código de recuperação                 |
+| `POST`                | `/auth/password/reset`         | Público                                | Redefine a senha e revoga sessões existentes     |
+| `GET/PUT`             | `/me`                          | Autenticado                            | Consulta ou atualiza o próprio perfil            |
+| `POST`                | `/clientes`                    | Público                                | Cadastra um cliente                              |
+| `POST`                | `/alunos`                      | Público                                | Cadastra um aluno                                |
+| `GET/POST/PUT/DELETE` | `/agendamentos/**`             | Autenticado                            | Gerencia agendamentos com validação de posse     |
+| `GET`                 | `/cursos/**`                   | Autenticado                            | Consulta cursos                                  |
+| `POST/PUT/DELETE`     | `/cursos/**`                   | PROFESSOR, GESTOR, SUPERVISOR ou ADMIN | Gerencia cursos                                  |
+| `GET`                 | `/servicos/**`, `/unidades/**` | Autenticado                            | Consulta serviços e unidades                     |
+| `POST/PUT/DELETE`     | `/servicos/**`, `/unidades/**` | ATENDENTE, GESTOR, SUPERVISOR ou ADMIN | Gerencia serviços e unidades                     |
+| `POST`                | `/avaliacoes/**`               | CLIENTE                                | Cria avaliações                                  |
+| `GET`                 | `/avaliacoes/**`               | Autenticado                            | Consulta avaliações                              |
+| `GET/POST/PUT/DELETE` | `/funcionarios/**`             | GESTOR, SUPERVISOR ou ADMIN            | Gerencia funcionários                            |
+| `GET`                 | `/relatorios/**`               | GESTOR, SUPERVISOR ou ADMIN            | Consulta relatórios                              |
 
 ---
 
 ## 👨‍💻 Autor
 
-**Henrique Rossini** — Desenvolvedor Backend Java Júnior
+**Henrique Rossini** — Desenvolvedor Backend Java
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-hrossini-blue?style=flat&logo=linkedin)](https://linkedin.com/in/hrossini)
 [![GitHub](https://img.shields.io/badge/GitHub-RozziniHenrique-black?style=flat&logo=github)](https://github.com/RozziniHenrique)
