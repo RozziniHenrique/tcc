@@ -3,11 +3,15 @@ package com.tcc.uscs.service;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.infra.helper.StoredProcedureHelper;
 import com.tcc.uscs.model.funcionario.Funcionario;
+import com.tcc.uscs.model.funcionario.dto.AdicionarPerfilFuncionarioDTO;
 import com.tcc.uscs.model.funcionario.dto.AtualizarFuncionarioDTO;
 import com.tcc.uscs.model.funcionario.dto.CadastrarFuncionarioDTO;
 import com.tcc.uscs.model.funcionario.dto.DetalharFuncionarioDTO;
 import com.tcc.uscs.model.funcionario.dto.ListarFuncionarioDTO;
+import com.tcc.uscs.model.usuario.TipoUsuario;
+import com.tcc.uscs.model.usuario.Usuario;
 import com.tcc.uscs.repository.FuncionarioRepository;
+import com.tcc.uscs.repository.UsuarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.StoredProcedureQuery;
@@ -25,10 +29,12 @@ public class FuncionarioService {
   private final FuncionarioRepository repository;
   private final EntityManager entityManager;
   private final PasswordEncoder passwordEncoder;
+  private final CadastroUsuarioValidator cadastroUsuarioValidator;
+  private final UsuarioRepository usuarioRepository;
 
   public Funcionario obterEntidadePorId(Long id) {
     return repository
-      .findById(id)
+      .findByIdAndAtivoTrueAndUsuarioAtivoTrue(id)
       .orElseThrow(() ->
         new ValidacaoException("Funcionário não encontrado ou inativo!")
       );
@@ -36,6 +42,7 @@ public class FuncionarioService {
 
   @Transactional
   public DetalharFuncionarioDTO cadastrar(CadastrarFuncionarioDTO dados) {
+    cadastroUsuarioValidator.validarNovoUsuario(dados.cpf(), dados.email());
     String senhaCriptografada = passwordEncoder.encode(dados.senha());
 
     StoredProcedureQuery query = entityManager.createStoredProcedureQuery(
@@ -74,9 +81,40 @@ public class FuncionarioService {
     return detalharPorId(idGerado);
   }
 
+  @Transactional
+  public DetalharFuncionarioDTO adicionarPerfil(
+    Long idUsuario,
+    AdicionarPerfilFuncionarioDTO dados
+  ) {
+    var usuario = usuarioRepository
+      .findById(idUsuario)
+      .filter(Usuario::isEnabled)
+      .orElseThrow(() ->
+        new ValidacaoException("Usuário não encontrado ou inativo.")
+      );
+
+    if (usuario.getPerfis().contains(TipoUsuario.FUNCIONARIO)) {
+      throw new ValidacaoException("O usuário já possui o perfil FUNCIONARIO.");
+    }
+
+    var funcionarioExistente = repository.findById(idUsuario);
+
+    if (funcionarioExistente.isPresent()) {
+      funcionarioExistente.get().reativar(dados.funcao());
+      return new DetalharFuncionarioDTO(funcionarioExistente.get());
+    }
+
+    usuario.getPerfis().add(TipoUsuario.FUNCIONARIO);
+
+    var funcionario = new Funcionario(usuario, dados.funcao());
+    repository.save(funcionario);
+
+    return new DetalharFuncionarioDTO(funcionario);
+  }
+
   public Page<ListarFuncionarioDTO> listar(Pageable paginacao) {
     return repository
-      .findAllByUsuarioAtivoTrue(paginacao)
+      .findAllByAtivoTrueAndUsuarioAtivoTrue(paginacao)
       .map(ListarFuncionarioDTO::new);
   }
 

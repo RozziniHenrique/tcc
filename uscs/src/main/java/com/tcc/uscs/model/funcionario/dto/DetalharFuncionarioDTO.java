@@ -22,7 +22,7 @@ public record DetalharFuncionarioDTO(
       f.getUsuario().getCpf(),
       f.getUsuario().getEnderecoCompleto(),
       f.getFuncao(),
-      f.getUsuario().getAtivo()
+      f.getAtivo()
     );
   }
 }

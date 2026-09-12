@@ -2,6 +2,7 @@ package com.tcc.uscs.model.aluno;
 
 import com.tcc.uscs.model.aluno.dto.AtualizarAlunoDTO;
 import com.tcc.uscs.model.curso.Curso;
+import com.tcc.uscs.model.usuario.TipoUsuario;
 import com.tcc.uscs.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
@@ -27,9 +28,13 @@ public class Aluno {
   @JoinColumn(name = "curso_id")
   private Curso curso;
 
+  @Column(nullable = false)
+  private Boolean ativo;
+
   public Aluno(Usuario usuario, Curso curso) {
     this.usuario = usuario;
     this.curso = curso;
+    this.ativo = true;
   }
 
   public void atualizar(AtualizarAlunoDTO dados) {
@@ -42,6 +47,13 @@ public class Aluno {
   }
 
   public void excluir() {
-    this.usuario.desativar();
+    this.ativo = false;
+    this.usuario.removerPerfil(TipoUsuario.ALUNO);
+  }
+
+  public void reativar(Curso curso) {
+    this.ativo = true;
+    this.curso = curso;
+    this.usuario.adicionarPerfil(TipoUsuario.ALUNO);
   }
 }

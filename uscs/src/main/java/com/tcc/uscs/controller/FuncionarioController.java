@@ -33,6 +33,23 @@ public class FuncionarioController {
     return ResponseEntity.created(uri).body(detalhe);
   }
 
+  @PostMapping("/perfis/{idUsuario}")
+  @Operation(summary = "Adiciona o perfil de funcionário a uma conta existente")
+  public ResponseEntity<DetalharFuncionarioDTO> adicionarPerfil(
+    @PathVariable Long idUsuario,
+    @RequestBody @Valid AdicionarPerfilFuncionarioDTO dados,
+    UriComponentsBuilder uriBuilder
+  ) {
+    var detalhe = service.adicionarPerfil(idUsuario, dados);
+
+    var uri = uriBuilder
+      .path("/funcionarios/{id}")
+      .buildAndExpand(detalhe.id())
+      .toUri();
+
+    return ResponseEntity.created(uri).body(detalhe);
+  }
+
   @GetMapping
   @Operation(summary = "Lista Funcionario")
   public ResponseEntity<Page<ListarFuncionarioDTO>> listar(

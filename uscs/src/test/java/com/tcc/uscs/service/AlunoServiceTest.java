@@ -1,13 +1,19 @@
 package com.tcc.uscs.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.aluno.dto.AtualizarAlunoDTO;
 import com.tcc.uscs.model.aluno.dto.CadastrarAlunoDTO;
+import com.tcc.uscs.model.curso.Curso;
 import com.tcc.uscs.model.usuario.Usuario;
 import com.tcc.uscs.repository.AlunoRepository;
+import com.tcc.uscs.repository.CursoRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.StoredProcedureQuery;
 import java.util.Collections;
@@ -55,6 +61,12 @@ class AlunoServiceTest {
   @Mock
   private StoredProcedureQuery storedProcedureQuery;
 
+  @Mock
+  private CadastroUsuarioValidator cadastroUsuarioValidator;
+
+  @Mock
+  private CursoRepository cursoRepository;
+
   private void mockUsuarioLogado(Long id, String role) {
     lenient()
       .when(securityContext.getAuthentication())
@@ -80,9 +92,9 @@ class AlunoServiceTest {
     var alunoMock = mock(Aluno.class);
     when(alunoMock.getId()).thenReturn(10L);
 
-    when(repository.findAllByCursoIdAndUsuarioAtivoTrue(1L)).thenReturn(
-      List.of(alunoMock)
-    );
+    when(
+      repository.findAllByCursoIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
+    ).thenReturn(List.of(alunoMock));
 
     var idAluno = alunoService.buscarAlunoAleatorio(1L);
 
@@ -94,9 +106,9 @@ class AlunoServiceTest {
     "Deveria lançar erro ao buscar aluno aleatório se não houver nenhum disponível"
   )
   void cenarioBuscarAlunoAleatorioSemDisponibilidade() {
-    when(repository.findAllByCursoIdAndUsuarioAtivoTrue(1L)).thenReturn(
-      Collections.emptyList()
-    );
+    when(
+      repository.findAllByCursoIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
+    ).thenReturn(Collections.emptyList());
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
       alunoService.buscarAlunoAleatorio(1L)
@@ -124,7 +136,9 @@ class AlunoServiceTest {
     var alunoMock = mock(Aluno.class);
     var usuarioMock = mock(Usuario.class);
     when(alunoMock.getUsuario()).thenReturn(usuarioMock);
-    when(repository.findById(5L)).thenReturn(Optional.of(alunoMock));
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(5L)).thenReturn(
+      Optional.of(alunoMock)
+    );
 
     var resultado = alunoService.cadastrar(dtoCadastro);
 
@@ -155,15 +169,68 @@ class AlunoServiceTest {
     mockUsuarioLogado(1L, "ROLE_ALUNO");
 
     var dtoAtualizar = mock(AtualizarAlunoDTO.class);
+    when(dtoAtualizar.idCurso()).thenReturn(null);
     var alunoMock = mock(Aluno.class);
     var usuarioMock = mock(Usuario.class);
 
     when(alunoMock.getUsuario()).thenReturn(usuarioMock);
-    when(repository.findById(1L)).thenReturn(Optional.of(alunoMock));
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(alunoMock)
+    );
 
     var resultado = alunoService.atualizar(1L, dtoAtualizar);
 
     verify(alunoMock).atualizar(dtoAtualizar);
     Assertions.assertNotNull(resultado);
+  }
+
+  @Test
+  @DisplayName("Deveria permitir alterar o curso do aluno")
+  void cenarioAtualizarCursoDoAluno() {
+    mockUsuarioLogado(1L, "ROLE_ALUNO");
+
+    var dados = mock(AtualizarAlunoDTO.class);
+    var aluno = mock(Aluno.class);
+    var usuario = mock(Usuario.class);
+    var curso = mock(Curso.class);
+
+    when(dados.idCurso()).thenReturn(10L);
+    when(aluno.getUsuario()).thenReturn(usuario);
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(aluno)
+    );
+    when(cursoRepository.findByIdAndAtivoTrue(10L)).thenReturn(
+      Optional.of(curso)
+    );
+
+    var resultado = alunoService.atualizar(1L, dados);
+
+    verify(aluno).setCurso(curso);
+    assertNotNull(resultado);
+  }
+
+  @Test
+  @DisplayName("Deveria recusar curso inexistente ou inativo")
+  void cenarioAtualizarParaCursoInvalido() {
+    mockUsuarioLogado(1L, "ROLE_ALUNO");
+
+    var dados = mock(AtualizarAlunoDTO.class);
+    var aluno = mock(Aluno.class);
+
+    when(dados.idCurso()).thenReturn(10L);
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(aluno)
+    );
+    when(cursoRepository.findByIdAndAtivoTrue(10L)).thenReturn(
+      Optional.empty()
+    );
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      alunoService.atualizar(1L, dados)
+    );
+
+    assertEquals("Curso não encontrado ou inativo.", erro.getMessage());
+
+    verify(aluno, never()).setCurso(any(Curso.class));
   }
 }

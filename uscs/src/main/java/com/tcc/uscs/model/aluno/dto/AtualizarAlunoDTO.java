@@ -1,8 +1,17 @@
 package com.tcc.uscs.model.aluno.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 public record AtualizarAlunoDTO(
-  String nome,
-  String email,
+  @Size(min = 2, max = 255) String nome,
+  @Email @Size(max = 100) String email,
+  @Pattern(
+    regexp = "\\d{10,11}",
+    message = "O telefone deve conter 10 ou 11 dígitos"
+  )
   String telefone,
-  String endereco
+  @Size(max = 255) String endereco,
+  Long idCurso
 ) {}
