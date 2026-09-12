@@ -1,9 +1,11 @@
 package com.tcc.uscs.controller;
 
+import com.tcc.uscs.model.avaliacao.dto.AvaliacaoPendenteDTO;
 import com.tcc.uscs.model.avaliacao.dto.CadastrarAvaliacaoDTO;
 import com.tcc.uscs.model.avaliacao.dto.DetalharAvaliacaoDTO;
 import com.tcc.uscs.service.AvaliacaoService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +29,11 @@ public class AvaliacaoController {
       .buildAndExpand(dto.idAgendamento())
       .toUri();
     return ResponseEntity.created(uri).body(dto);
+  }
+
+  @GetMapping("/pendentes")
+  public ResponseEntity<List<AvaliacaoPendenteDTO>> listarPendentes() {
+    return ResponseEntity.ok(service.listarPendentes());
   }
 
   @GetMapping("/agendamento/{id}")
