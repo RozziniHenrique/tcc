@@ -32,16 +32,20 @@ public class UnidadeService {
 
   public DetalharUnidadeDTO detalhar(Long id) {
     var unidade = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Unidade não encontrada!"));
+      .findByIdAndAtivoTrue(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Unidade não encontrada ou inativa!")
+      );
     return new DetalharUnidadeDTO(unidade);
   }
 
   @Transactional
   public DetalharUnidadeDTO atualizar(Long id, AtualizarUnidadeDTO dados) {
     var unidade = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Unidade não encontrada!"));
+      .findByIdAndAtivoTrue(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Unidade não encontrada ou inativa!")
+      );
     unidade.atualizar(dados);
     return new DetalharUnidadeDTO(unidade);
   }
@@ -49,8 +53,10 @@ public class UnidadeService {
   @Transactional
   public void excluir(Long id) {
     var unidade = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Unidade não encontrada!"));
+      .findByIdAndAtivoTrue(id)
+      .orElseThrow(() ->
+        new ValidacaoException("Unidade não encontrada ou inativa!")
+      );
     unidade.excluir();
   }
 }

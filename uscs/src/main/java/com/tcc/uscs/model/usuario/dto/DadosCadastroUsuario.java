@@ -11,7 +11,7 @@ public record DadosCadastroUsuario(
   @NotBlank String cpf,
   @NotBlank @Email String email,
   @NotBlank
-  @Size(min = 6, message = "A senha deve ter no mínimo 6 caracteres")
+  @Size(min = 8, max = 72, message = "A senha deve ter no mínimo 8 caracteres")
   String senha,
   @NotBlank String enderecoCompleto,
   @NotBlank String telefone,

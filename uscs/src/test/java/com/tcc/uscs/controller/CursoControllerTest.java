@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -75,7 +76,15 @@ class CursoControllerTest {
       new PageImpl<>(List.of(item))
     );
 
-    mvc.perform(get("/cursos")).andExpect(status().isOk());
+    mvc
+      .perform(get("/cursos"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.content").isArray())
+      .andExpect(jsonPath("$.content.length()").value(1))
+      .andExpect(jsonPath("$.page.number").value(0))
+      .andExpect(jsonPath("$.page.size").value(1))
+      .andExpect(jsonPath("$.page.totalElements").value(1))
+      .andExpect(jsonPath("$.page.totalPages").value(1));
   }
 
   @Test

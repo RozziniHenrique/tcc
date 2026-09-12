@@ -5,8 +5,11 @@ import static org.mockito.Mockito.*;
 
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.servico.Servico;
+import com.tcc.uscs.model.servico.dto.AtualizarServicoDTO;
 import com.tcc.uscs.repository.ServicoRepository;
 import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -74,11 +77,65 @@ class ServicoServiceTest {
   }
 
   @Test
+  @DisplayName("Deveria detalhar serviço ativo")
+  void deveriaDetalharServicoAtivo() {
+    var servico = mock(Servico.class);
+
+    when(repository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(servico));
+
+    var resultado = service.detalhar(1L);
+
+    assertNotNull(resultado);
+  }
+
+  @Test
+  @DisplayName("Deveria recusar serviço inexistente ou inativo")
   void deveriaRecusarServicoInexistenteOuInativo() {
+    when(repository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.empty());
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      service.detalhar(1L)
+    );
+
+    assertEquals("Serviço não encontrado ou inativo!", erro.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deveria atualizar serviço ativo")
+  void deveriaAtualizarServicoAtivo() {
+    var servico = mock(Servico.class);
+    var dados = mock(AtualizarServicoDTO.class);
+
+    when(repository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(servico));
+
+    var resultado = service.atualizar(1L, dados);
+
+    verify(servico).atualizar(dados);
+    assertNotNull(resultado);
+  }
+
+  @Test
+  @DisplayName("Deveria excluir logicamente serviço ativo")
+  void deveriaExcluirServicoAtivo() {
+    var servico = mock(Servico.class);
+
+    when(repository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(servico));
+
+    service.excluir(1L);
+
+    verify(servico).excluir();
+  }
+
+  @Test
+  @DisplayName(
+    "Deveria recusar quando algum serviço não existir ou estiver inativo"
+  )
+  void deveriaRecusarServicoInexistenteNaLista() {
+    var servico = mock(Servico.class);
     var ids = List.of(1L, 2L);
 
     when(repository.findAllByIdInAndAtivoTrue(ids)).thenReturn(
-      List.of(mock(Servico.class))
+      List.of(servico)
     );
 
     var erro = assertThrows(ValidacaoException.class, () ->
