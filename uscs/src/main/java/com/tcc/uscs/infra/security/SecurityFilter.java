@@ -1,6 +1,7 @@
 package com.tcc.uscs.infra.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tcc.uscs.infra.exception.ErroApiDTO;
 import com.tcc.uscs.infra.exception.TokenInvalidoException;
 import com.tcc.uscs.repository.UsuarioRepository;
 import jakarta.servlet.FilterChain;
@@ -8,9 +9,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -22,6 +22,7 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private final TokenService tokenService;
   private final UsuarioRepository repository;
+  private final ObjectMapper objectMapper;
 
   @Override
   protected void doFilterInternal(
@@ -34,26 +35,21 @@ public class SecurityFilter extends OncePerRequestFilter {
     if (tokenJWT != null) {
       try {
         var subject = tokenService.getSubject(tokenJWT);
-
-        if (subject != null) {
-          var usuario = repository.findByEmail(subject);
-          if (usuario != null) {
-            var authentication = new UsernamePasswordAuthenticationToken(
-              usuario,
-              null,
-              usuario.getAuthorities()
-            );
-            SecurityContextHolder.getContext().setAuthentication(
-              authentication
-            );
-          } else {
-            SecurityContextHolder.clearContext();
-          }
+        var usuarioOpt = repository.findByEmailAndAtivoTrue(subject);
+        if (usuarioOpt.isPresent()) {
+          var usuario = usuarioOpt.get();
+          var authentication = new UsernamePasswordAuthenticationToken(
+            usuario,
+            null,
+            usuario.getAuthorities()
+          );
+          SecurityContextHolder.getContext().setAuthentication(authentication);
+        } else {
+          SecurityContextHolder.clearContext();
         }
       } catch (TokenInvalidoException ex) {
         SecurityContextHolder.clearContext();
-
-        estilizarRespostaErro(response, ex.getMessage());
+        escreverNaoAutorizado(response);
         return;
       }
     }
@@ -63,32 +59,23 @@ public class SecurityFilter extends OncePerRequestFilter {
 
   private String recuperarToken(HttpServletRequest request) {
     var authorizationHeader = request.getHeader("Authorization");
-
     if (
       authorizationHeader != null && authorizationHeader.startsWith("Bearer ")
     ) {
-      return authorizationHeader.replace("Bearer ", "");
+      return authorizationHeader.substring(7).trim();
     }
-
     return null;
   }
 
-  private void estilizarRespostaErro(
-    HttpServletResponse response,
-    String mensagemExcecao
-  ) throws IOException {
+  private void escreverNaoAutorizado(HttpServletResponse response)
+    throws IOException {
     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
     response.setContentType("application/json;charset=UTF-8");
-
-    Map<String, Object> erroJson = new HashMap<>();
-    erroJson.put("status", HttpServletResponse.SC_UNAUTHORIZED);
-    erroJson.put("erro", "Unauthorized");
-    erroJson.put("mensagem", mensagemExcecao);
-    erroJson.put("timestamp", System.currentTimeMillis());
-
-    ObjectMapper mapper = new ObjectMapper();
-    String jsonString = mapper.writeValueAsString(erroJson);
-
-    response.getWriter().write(jsonString);
+    var erro = ErroApiDTO.of(
+      HttpStatus.UNAUTHORIZED.value(),
+      "UNAUTHORIZED",
+      "Credenciais ou token inválidos."
+    );
+    response.getWriter().write(objectMapper.writeValueAsString(erro));
   }
 }

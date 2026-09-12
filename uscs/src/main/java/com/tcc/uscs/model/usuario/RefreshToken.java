@@ -4,30 +4,33 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
 
-@Table(name = "password_reset_tokens")
+@Table(name = "refresh_tokens")
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PasswordResetToken {
+public class RefreshToken {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, unique = true)
-  private String token;
+  @Column(name = "token_hash", nullable = false, unique = true, length = 64)
+  private String tokenHash;
 
-  @OneToOne(fetch = FetchType.EAGER)
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "usuario_id", nullable = false)
   private Usuario usuario;
 
-  @Column(nullable = false)
+  @Column(name = "data_expiracao", nullable = false)
   private LocalDateTime dataExpiracao;
 
   @Column(nullable = false)
-  private Integer tentativas = 0;
+  private boolean revogado;
+
+  @Column(name = "criado_em", nullable = false)
+  private LocalDateTime criadoEm;
 
   public boolean isExpirado() {
     return LocalDateTime.now().isAfter(dataExpiracao);

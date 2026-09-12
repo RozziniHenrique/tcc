@@ -4,11 +4,13 @@ import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.usuario.PasswordResetToken;
 import com.tcc.uscs.model.usuario.dto.RedefinirSenhaDTO;
 import com.tcc.uscs.model.usuario.dto.SolicitarRecuperacaoSenhaDTO;
+import com.tcc.uscs.model.usuario.dto.VerificarCodigoSenhaDTO;
 import com.tcc.uscs.repository.PasswordResetTokenRepository;
 import com.tcc.uscs.repository.UsuarioRepository;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,50 +22,90 @@ public class RecuperacaoSenhaService {
   private final UsuarioRepository usuarioRepository;
   private final PasswordResetTokenRepository tokenRepository;
   private final PasswordEncoder passwordEncoder;
+  private final EmailService emailService;
+  private final RefreshTokenService refreshTokenService;
+  private final SecureRandom secureRandom = new SecureRandom();
+
+  @Value("${app.password-reset.expiration-minutes:15}")
+  private long expirationMinutes;
+
+  @Value("${app.password-reset.max-attempts:5}")
+  private int maxAttempts;
 
   @Transactional
-  public String solicitarRecuperacao(SolicitarRecuperacaoSenhaDTO dados) {
-    var usuario = usuarioRepository
-      .findByEmailAndAtivoTrue(dados.email())
-      .orElseThrow(() ->
-        new ValidacaoException("E-mail não encontrado ou usuário inativo.")
-      );
+  public void solicitarRecuperacao(SolicitarRecuperacaoSenhaDTO dados) {
+    // Resposta pública é sempre genérica para não revelar se o e-mail existe.
+    var usuarioOpt = usuarioRepository.findByEmailAndAtivoTrue(dados.email());
+    if (usuarioOpt.isEmpty()) {
+      return;
+    }
 
+    var usuario = usuarioOpt.get();
     tokenRepository.deleteByUsuario(usuario);
 
-    String token = UUID.randomUUID().toString();
+    String codigo = String.format("%06d", secureRandom.nextInt(1_000_000));
     PasswordResetToken resetToken = new PasswordResetToken();
-    resetToken.setToken(token);
+    resetToken.setToken(passwordEncoder.encode(codigo));
     resetToken.setUsuario(usuario);
-    resetToken.setDataExpiracao(LocalDateTime.now().plusMinutes(30));
-
+    resetToken.setDataExpiracao(
+      LocalDateTime.now().plusMinutes(expirationMinutes)
+    );
+    resetToken.setTentativas(0);
     tokenRepository.save(resetToken);
 
-    System.out.println(
-      ">>> TOKEN DE RECUPERAÇÃO GERADO PARA " + dados.email() + ": " + token
+    emailService.enviarCodigoRecuperacao(
+      usuario.getEmail(),
+      codigo,
+      expirationMinutes
     );
-    return token;
   }
 
-  @Transactional
+  @Transactional(noRollbackFor = ValidacaoException.class)
+  public boolean verificarCodigo(VerificarCodigoSenhaDTO dados) {
+    var resetToken = obterTokenValido(dados.email());
+    validarTentativa(resetToken, dados.codigo());
+    return true;
+  }
+
+  @Transactional(noRollbackFor = ValidacaoException.class)
   public void redefinirSenha(RedefinirSenhaDTO dados) {
+    var resetToken = obterTokenValido(dados.email());
+    validarTentativa(resetToken, dados.codigo());
+
+    var usuario = resetToken.getUsuario();
+    usuario.setSenha(passwordEncoder.encode(dados.novaSenha()));
+    usuarioRepository.save(usuario);
+    refreshTokenService.revogarTodos(usuario);
+    tokenRepository.delete(resetToken);
+  }
+
+  private PasswordResetToken obterTokenValido(String email) {
     var resetToken = tokenRepository
-      .findByToken(dados.token())
+      .findByUsuarioEmail(email)
       .orElseThrow(() ->
-        new ValidacaoException("Token de recuperação inválido ou inexistente.")
+        new ValidacaoException("Código inválido ou expirado.")
       );
 
     if (resetToken.isExpirado()) {
       tokenRepository.delete(resetToken);
-      throw new ValidacaoException(
-        "Token de recuperação expirado. Solicite uma nova redefinição."
-      );
+      throw new ValidacaoException("Código inválido ou expirado.");
     }
+    if (resetToken.getTentativas() >= maxAttempts) {
+      tokenRepository.delete(resetToken);
+      throw new ValidacaoException("Código inválido ou expirado.");
+    }
+    return resetToken;
+  }
 
-    var usuario = resetToken.getUsuario();
-    usuario.setSenha(passwordEncoder.encode(dados.novaSenha()));
-
-    usuarioRepository.save(usuario);
-    tokenRepository.delete(resetToken);
+  private void validarTentativa(PasswordResetToken resetToken, String codigo) {
+    if (!passwordEncoder.matches(codigo, resetToken.getToken())) {
+      resetToken.setTentativas(resetToken.getTentativas() + 1);
+      if (resetToken.getTentativas() >= maxAttempts) {
+        tokenRepository.delete(resetToken);
+      } else {
+        tokenRepository.save(resetToken);
+      }
+      throw new ValidacaoException("Código inválido ou expirado.");
+    }
   }
 }

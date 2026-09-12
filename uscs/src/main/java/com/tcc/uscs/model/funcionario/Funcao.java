@@ -5,4 +5,5 @@ public enum Funcao {
   ATENDENTE,
   GESTOR,
   SUPERVISOR,
+  ADMIN,
 }
