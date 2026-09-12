@@ -12,8 +12,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class TratadorDeErros {
@@ -107,6 +109,28 @@ public class TratadorDeErros {
       HttpStatus.INTERNAL_SERVER_ERROR,
       "INTERNAL_ERROR",
       "Erro ao persistir os dados no banco de dados."
+    );
+  }
+
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ErroApiDTO> tratarParametroObrigatorioAusente(
+    MissingServletRequestParameterException ex
+  ) {
+    return resposta(
+      HttpStatus.BAD_REQUEST,
+      "MISSING_PARAMETER",
+      "O parâmetro '" + ex.getParameterName() + "' é obrigatório."
+    );
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ErroApiDTO> tratarParametroInvalido(
+    MethodArgumentTypeMismatchException ex
+  ) {
+    return resposta(
+      HttpStatus.BAD_REQUEST,
+      "INVALID_PARAMETER",
+      "O parâmetro '" + ex.getName() + "' possui um valor inválido."
     );
   }
 

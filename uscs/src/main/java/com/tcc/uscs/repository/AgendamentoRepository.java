@@ -2,6 +2,7 @@ package com.tcc.uscs.repository;
 
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.StatusAgendamento;
+import com.tcc.uscs.model.relatorio.dto.AgendamentosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
 import java.time.LocalDateTime;
@@ -39,12 +40,13 @@ public interface AgendamentoRepository
 
   @Query(
     """
-        SELECT new com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO(
-            COUNT(a),
-            SUM(a.valorNoAto)
-        )
-        FROM Agendamento a
-        WHERE a.ativo = true
+      SELECT new com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO(
+        COUNT(a),
+        SUM(a.valorNoAto)
+      )
+      FROM Agendamento a
+      WHERE a.ativo = true
+        AND a.status = com.tcc.uscs.model.agendamento.StatusAgendamento.CONCLUIDO
         AND a.dataHora BETWEEN :inicio AND :fim
     """
   )
@@ -55,16 +57,45 @@ public interface AgendamentoRepository
 
   @Query(
     """
-        SELECT new com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO(
-            c.nome,
-            COUNT(al)
-        )
-        FROM Aluno al
-        JOIN al.curso c
-        GROUP BY c.nome
+      SELECT new com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO(
+        c.id,
+        c.nome,
+        COUNT(al)
+      )
+      FROM Aluno al
+      JOIN al.curso c
+      JOIN al.usuario u
+      WHERE al.ativo = true
+        AND u.ativo = true
+        AND c.ativo = true
+      GROUP BY c.id, c.nome
+      ORDER BY c.nome
     """
   )
   List<AlunosPorCursoRelatorioDTO> contarAlunosPorCurso();
+
+  @Query(
+    """
+      SELECT new com.tcc.uscs.model.relatorio.dto.AgendamentosPorCursoRelatorioDTO(
+        c.id,
+        c.nome,
+        COUNT(a),
+        SUM(a.valorNoAto)
+      )
+      FROM Agendamento a
+      JOIN a.curso c
+      WHERE a.ativo = true
+        AND a.status = com.tcc.uscs.model.agendamento.StatusAgendamento.CONCLUIDO
+        AND c.ativo = true
+        AND a.dataHora BETWEEN :inicio AND :fim
+      GROUP BY c.id, c.nome
+      ORDER BY c.nome
+    """
+  )
+  List<AgendamentosPorCursoRelatorioDTO> calcularAgendamentosPorCurso(
+    @Param("inicio") LocalDateTime inicio,
+    @Param("fim") LocalDateTime fim
+  );
 
   boolean existsByAlunoIdAndDataHoraAndAtivoTrueAndIdNot(
     Long idAluno,
