@@ -1,5 +1,6 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.avaliacao.Avaliacao;
@@ -28,7 +29,9 @@ public class AvaliacaoService {
   public DetalharAvaliacaoDTO avaliar(CadastrarAvaliacaoDTO dados) {
     var agendamento = agendamentoRepository
       .findById(dados.idAgendamento())
-      .orElseThrow(() -> new ValidacaoException("Agendamento não encontrado."));
+      .orElseThrow(() ->
+        new RecursoNaoEncontradoException("Agendamento não encontrado.")
+      );
 
     var usuarioLogado = usuarioAtual();
     if (!agendamento.getCliente().getId().equals(usuarioLogado.getId())) {
@@ -67,7 +70,7 @@ public class AvaliacaoService {
     var avaliacao = avaliacaoRepository
       .findByAgendamentoId(idAgendamento)
       .orElseThrow(() ->
-        new ValidacaoException(
+        new RecursoNaoEncontradoException(
           "Avaliação não encontrada para este agendamento."
         )
       );

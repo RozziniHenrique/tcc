@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.StatusAgendamento;
@@ -793,5 +794,75 @@ class AgendamentoServiceTest {
       erro.getMessage()
     );
     verify(agendamento, never()).cancelar(any());
+  }
+
+  @Test
+  @DisplayName("Deveria recusar agendamento inexistente")
+  void cenarioDetalharAgendamentoInexistente() {
+    when(repository.findById(999L)).thenReturn(Optional.empty());
+
+    var erro = assertThrows(RecursoNaoEncontradoException.class, () ->
+      agendamentoService.detalhar(999L)
+    );
+
+    assertEquals("Agendamento não encontrado.", erro.getMessage());
+  }
+
+  @Test
+  @DisplayName("Deveria selecionar automaticamente um aluno disponível")
+  void cenarioAgendamentoComAlunoAutomatico() {
+    var dataHora = LocalDateTime.now()
+      .plusWeeks(1)
+      .with(DayOfWeek.TUESDAY)
+      .withHour(14)
+      .withMinute(0);
+
+    var dados = new CadastrarAgendamentoDTO(
+      1L,
+      null,
+      1L,
+      1L,
+      List.of(1L),
+      dataHora
+    );
+
+    var usuario = mock(Usuario.class);
+    var cliente = mock(Cliente.class);
+    var aluno = mock(Aluno.class);
+    var curso = mock(Curso.class);
+    var unidade = mock(Unidade.class);
+    var servico = mock(Servico.class);
+
+    when(usuario.getNome()).thenReturn("Usuário Teste");
+    when(cliente.getUsuario()).thenReturn(usuario);
+    when(aluno.getUsuario()).thenReturn(usuario);
+    when(servico.getValor()).thenReturn(new BigDecimal("100.00"));
+
+    when(
+      clienteRepository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
+    ).thenReturn(Optional.of(cliente));
+
+    when(cursoRepository.findByIdAndAtivoTrue(1L)).thenReturn(
+      Optional.of(curso)
+    );
+
+    when(alunoService.buscarAlunoAleatorio(1L, dataHora)).thenReturn(2L);
+
+    when(alunoService.obterEntidadePorIdECurso(2L, 1L)).thenReturn(aluno);
+
+    when(unidadeRepository.findByIdAndAtivoTrue(1L)).thenReturn(
+      Optional.of(unidade)
+    );
+
+    when(servicoService.buscarServicosValidos(List.of(1L))).thenReturn(
+      List.of(servico)
+    );
+
+    var resultado = agendamentoService.agendar(dados);
+
+    assertNotNull(resultado);
+    verify(alunoService).buscarAlunoAleatorio(1L, dataHora);
+    verify(alunoService).obterEntidadePorIdECurso(2L, 1L);
+    verify(repository).save(any(Agendamento.class));
   }
 }

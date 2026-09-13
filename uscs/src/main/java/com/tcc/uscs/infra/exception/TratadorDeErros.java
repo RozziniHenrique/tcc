@@ -8,14 +8,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class TratadorDeErros {
@@ -31,6 +35,13 @@ public class TratadorDeErros {
       "NOT_FOUND",
       "Recurso não encontrado."
     );
+  }
+
+  @ExceptionHandler(RecursoNaoEncontradoException.class)
+  public ResponseEntity<ErroApiDTO> tratarRecursoNaoEncontrado(
+    RecursoNaoEncontradoException ex
+  ) {
+    return resposta(HttpStatus.NOT_FOUND, "NOT_FOUND", ex.getMessage());
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -131,6 +142,50 @@ public class TratadorDeErros {
       HttpStatus.BAD_REQUEST,
       "INVALID_PARAMETER",
       "O parâmetro '" + ex.getName() + "' possui um valor inválido."
+    );
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ErroApiDTO> tratarJsonInvalido(
+    HttpMessageNotReadableException ex
+  ) {
+    return resposta(
+      HttpStatus.BAD_REQUEST,
+      "MALFORMED_JSON",
+      "O corpo da requisição possui JSON inválido."
+    );
+  }
+
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ErroApiDTO> tratarRotaInexistente(
+    NoResourceFoundException ex
+  ) {
+    return resposta(
+      HttpStatus.NOT_FOUND,
+      "NOT_FOUND",
+      "Recurso não encontrado."
+    );
+  }
+
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public ResponseEntity<ErroApiDTO> tratarMetodoNaoPermitido(
+    HttpRequestMethodNotSupportedException ex
+  ) {
+    return resposta(
+      HttpStatus.METHOD_NOT_ALLOWED,
+      "METHOD_NOT_ALLOWED",
+      "Método HTTP não permitido para este recurso."
+    );
+  }
+
+  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+  public ResponseEntity<ErroApiDTO> tratarTipoDeConteudoInvalido(
+    HttpMediaTypeNotSupportedException ex
+  ) {
+    return resposta(
+      HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+      "UNSUPPORTED_MEDIA_TYPE",
+      "Tipo de conteúdo não suportado."
     );
   }
 

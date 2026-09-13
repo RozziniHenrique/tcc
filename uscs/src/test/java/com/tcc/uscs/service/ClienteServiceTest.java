@@ -2,6 +2,7 @@ package com.tcc.uscs.service;
 
 import static org.mockito.Mockito.*;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.cliente.Cliente;
 import com.tcc.uscs.model.cliente.dto.AtualizarClienteDTO;
@@ -85,8 +86,9 @@ class ClienteServiceTest {
       Optional.empty()
     );
 
-    var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
-      clienteService.obterEntidadePorId(1L)
+    var excecao = Assertions.assertThrows(
+      RecursoNaoEncontradoException.class,
+      () -> clienteService.obterEntidadePorId(1L)
     );
 
     Assertions.assertEquals(
@@ -206,5 +208,20 @@ class ClienteServiceTest {
     clienteService.excluir(1L);
 
     verify(clienteMock).excluir();
+  }
+
+  @Test
+  void deveriaRecusarAtualizacaoVazia() {
+    var dados = new AtualizarClienteDTO(null, null, null, null, null);
+
+    var erro = Assertions.assertThrows(ValidacaoException.class, () ->
+      clienteService.atualizar(1L, dados)
+    );
+
+    Assertions.assertEquals(
+      "Informe pelo menos um campo para realizar a atualização.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(repository);
   }
 }

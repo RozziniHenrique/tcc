@@ -7,4 +7,10 @@ public record AtualizarUnidadeDTO(
   @Size(min = 2, max = 255) String endereco,
   @Size(min = 2, max = 100) String cidade,
   @Size(min = 2, max = 2) String estado
-) {}
+) {
+  public boolean semAlteracoes() {
+    return (
+      nome == null && endereco == null && cidade == null && estado == null
+    );
+  }
+}

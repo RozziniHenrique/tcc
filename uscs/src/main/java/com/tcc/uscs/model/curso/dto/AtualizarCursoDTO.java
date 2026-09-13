@@ -13,4 +13,15 @@ public record AtualizarCursoDTO(
   @Pattern(regexp = "\\d{4}", message = "O ano vigente deve conter 4 dígitos")
   String anoVigente,
   @Positive BigDecimal valor
-) {}
+) {
+  public boolean semAlteracoes() {
+    return (
+      nome == null &&
+      descricao == null &&
+      periodo == null &&
+      duracao == null &&
+      anoVigente == null &&
+      valor == null
+    );
+  }
+}

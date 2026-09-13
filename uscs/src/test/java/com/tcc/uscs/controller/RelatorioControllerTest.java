@@ -57,7 +57,7 @@ class RelatorioControllerTest {
           .param("inicio", inicio.toString())
           .param("fim", fim.toString())
       )
-      .andExpect(status().isForbidden());
+      .andExpect(status().isUnauthorized());
   }
 
   @Test

@@ -1,7 +1,9 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.infra.helper.StoredProcedureHelper;
+import com.tcc.uscs.model.funcionario.Funcao;
 import com.tcc.uscs.model.funcionario.Funcionario;
 import com.tcc.uscs.model.funcionario.dto.AdicionarPerfilFuncionarioDTO;
 import com.tcc.uscs.model.funcionario.dto.AtualizarFuncionarioDTO;
@@ -32,11 +34,14 @@ public class FuncionarioService {
   private final CadastroUsuarioValidator cadastroUsuarioValidator;
   private final UsuarioRepository usuarioRepository;
 
+  @Transactional(readOnly = true)
   public Funcionario obterEntidadePorId(Long id) {
     return repository
       .findByIdAndAtivoTrueAndUsuarioAtivoTrue(id)
       .orElseThrow(() ->
-        new ValidacaoException("Funcionário não encontrado ou inativo!")
+        new RecursoNaoEncontradoException(
+          "Funcionário não encontrado ou inativo!"
+        )
       );
   }
 
@@ -90,7 +95,7 @@ public class FuncionarioService {
       .findById(idUsuario)
       .filter(Usuario::isEnabled)
       .orElseThrow(() ->
-        new ValidacaoException("Usuário não encontrado ou inativo.")
+        new RecursoNaoEncontradoException("Usuário não encontrado ou inativo.")
       );
 
     if (usuario.getPerfis().contains(TipoUsuario.FUNCIONARIO)) {
@@ -112,12 +117,14 @@ public class FuncionarioService {
     return new DetalharFuncionarioDTO(funcionario);
   }
 
+  @Transactional(readOnly = true)
   public Page<ListarFuncionarioDTO> listar(Pageable paginacao) {
     return repository
       .findAllByAtivoTrueAndUsuarioAtivoTrue(paginacao)
       .map(ListarFuncionarioDTO::new);
   }
 
+  @Transactional(readOnly = true)
   public DetalharFuncionarioDTO detalhar(Long id) {
     return detalharPorId(id);
   }
@@ -127,7 +134,19 @@ public class FuncionarioService {
     Long id,
     AtualizarFuncionarioDTO dados
   ) {
+    if (dados.semAlteracoes()) {
+      throw new ValidacaoException(
+        "Informe pelo menos um campo para realizar a atualização."
+      );
+    }
     var funcionario = obterEntidadePorId(id);
+    if (
+      funcionario.getFuncao() == Funcao.ADMIN &&
+      dados.funcao() != null &&
+      dados.funcao() != Funcao.ADMIN
+    ) {
+      validarRemocaoDoAdministrador(funcionario);
+    }
     funcionario.atualizar(dados);
     return new DetalharFuncionarioDTO(funcionario);
   }
@@ -135,11 +154,23 @@ public class FuncionarioService {
   @Transactional
   public void excluir(Long id) {
     var funcionario = obterEntidadePorId(id);
+    validarRemocaoDoAdministrador(funcionario);
     funcionario.excluir();
   }
 
   private DetalharFuncionarioDTO detalharPorId(Long id) {
     var funcionario = obterEntidadePorId(id);
     return new DetalharFuncionarioDTO(funcionario);
+  }
+
+  private void validarRemocaoDoAdministrador(Funcionario funcionario) {
+    if (
+      funcionario.getFuncao() == Funcao.ADMIN &&
+      repository.countByFuncaoAndAtivoTrueAndUsuarioAtivoTrue(Funcao.ADMIN) <= 1
+    ) {
+      throw new ValidacaoException(
+        "Não é possível remover o último administrador ativo."
+      );
+    }
   }
 }

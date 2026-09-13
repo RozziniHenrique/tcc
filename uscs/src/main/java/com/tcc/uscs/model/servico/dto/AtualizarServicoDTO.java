@@ -8,4 +8,8 @@ public record AtualizarServicoDTO(
   @Size(min = 2, max = 150) String nome,
   @Size(max = 2000) String descricao,
   @Positive BigDecimal valor
-) {}
+) {
+  public boolean semAlteracoes() {
+    return nome == null && descricao == null && valor == null;
+  }
+}

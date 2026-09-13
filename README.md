@@ -223,6 +223,10 @@ agendamento_servicos (N:N)
 
 Autenticação **stateless** via JWT — sem sessão no servidor. O `SecurityFilter` intercepta cada requisição, valida o token e injeta o usuário no contexto do Spring Security.
 
+A conta de usuário e seus perfis são tratados separadamente. A remoção do último perfil não desativa a conta: o usuário continua autenticável e pode adicionar novamente os perfis CLIENTE ou ALUNO por meio das rotas de `/me`. O perfil FUNCIONARIO permanece controlado pela gestão.
+
+A API diferencia os principais erros HTTP: `400` para requisição inválida, `401` para ausência ou falha de autenticação, `403` para falta de permissão, `404` para recurso inexistente, `405` para método não permitido e `415` para tipo de conteúdo incompatível.
+
 ### Matriz de Permissões
 
 | Endpoint                                                | Acesso                                      |
@@ -246,19 +250,21 @@ Autenticação **stateless** via JWT — sem sessão no servidor. O `SecurityFil
 
 Senhas armazenadas com **BCrypt** via `BCryptPasswordEncoder`.
 
+> Neste projeto, os endpoints `PUT` realizam atualização parcial: apenas os campos enviados são alterados. Requisições sem nenhum campo de atualização são rejeitadas com HTTP 400.
+
 ---
 
 ## 🧪 Testes
 
-A aplicação possui **176 testes automatizados**, implementados com **JUnit 5, Mockito, Spring Security Test e H2**.
+A aplicação possui **198 testes automatizados**, implementados com **JUnit 5, Mockito, Spring Security Test e H2**.
 
 | Categoria       | Quantidade |
 | --------------- | ---------: |
-| Controllers     |         44 |
-| Services        |        124 |
+| Controllers     |         51 |
+| Services        |        138 |
 | Repositories    |          4 |
-| Models e perfis |          4 |
-| **Total**       |    **176** |
+| Models e perfis |          5 |
+| **Total**       |    **198** |
 
 Os testes cobrem:
 
@@ -273,6 +279,11 @@ Os testes cobrem:
 - avaliações e avaliações pendentes;
 - autorização e validação de posse dos recursos;
 - serialização estável das respostas paginadas.
+- seleção automática de aluno disponível por curso e horário;
+- proteção contra remoção do último administrador;
+- independência entre conta e perfis;
+- respostas HTTP padronizadas para integração com o Flutter;
+- rejeição de atualizações sem campos informados.
 
 ```bash
 # Windows — Git Bash
@@ -339,6 +350,7 @@ As rotas de listagem retornam paginação em formato JSON estável:
     "totalPages": 0
   }
 }
+```
 
 ## 📊 Endpoints Principais
 
@@ -375,4 +387,3 @@ As rotas de listagem retornam paginação em formato JSON estável:
 ---
 
 > Projeto acadêmico em andamento — TCC do curso de Análise e Desenvolvimento de Sistemas (ADS), USCS. Previsão de conclusão: junho/2027.
-```

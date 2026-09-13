@@ -1,5 +1,6 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.servico.Servico;
 import com.tcc.uscs.model.servico.dto.AtualizarServicoDTO;
@@ -51,37 +52,38 @@ public class ServicoService {
     return new DetalharServicoDTO(servico);
   }
 
+  @Transactional(readOnly = true)
   public Page<ListarServicoDTO> listar(Pageable paginacao) {
     return repository.findAllByAtivoTrue(paginacao).map(ListarServicoDTO::new);
   }
 
+  @Transactional(readOnly = true)
   public DetalharServicoDTO detalhar(Long id) {
-    var servico = repository
-      .findByIdAndAtivoTrue(id)
-      .orElseThrow(() ->
-        new ValidacaoException("Serviço não encontrado ou inativo!")
-      );
-    return new DetalharServicoDTO(servico);
+    return new DetalharServicoDTO(obterServicoAtivo(id));
   }
 
   @Transactional
   public DetalharServicoDTO atualizar(Long id, AtualizarServicoDTO dados) {
-    var servico = repository
-      .findByIdAndAtivoTrue(id)
-      .orElseThrow(() ->
-        new ValidacaoException("Serviço não encontrado ou inativo!")
+    if (dados.semAlteracoes()) {
+      throw new ValidacaoException(
+        "Informe pelo menos um campo para realizar a atualização."
       );
+    }
+    var servico = obterServicoAtivo(id);
     servico.atualizar(dados);
     return new DetalharServicoDTO(servico);
   }
 
   @Transactional
   public void excluir(Long id) {
-    var servico = repository
+    obterServicoAtivo(id).excluir();
+  }
+
+  private Servico obterServicoAtivo(Long id) {
+    return repository
       .findByIdAndAtivoTrue(id)
       .orElseThrow(() ->
-        new ValidacaoException("Serviço não encontrado ou inativo!")
+        new RecursoNaoEncontradoException("Serviço não encontrado ou inativo!")
       );
-    servico.excluir();
   }
 }

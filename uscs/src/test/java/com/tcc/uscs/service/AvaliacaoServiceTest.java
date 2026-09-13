@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.StatusAgendamento;
@@ -83,7 +84,7 @@ class AvaliacaoServiceTest {
   void deveriaRecusarAgendamentoInexistente() {
     when(agendamentoRepository.findById(10L)).thenReturn(Optional.empty());
 
-    var erro = assertThrows(ValidacaoException.class, () ->
+    var erro = assertThrows(RecursoNaoEncontradoException.class, () ->
       avaliacaoService.avaliar(new CadastrarAvaliacaoDTO(10L, 5, null))
     );
 
@@ -318,7 +319,7 @@ class AvaliacaoServiceTest {
       Optional.empty()
     );
 
-    var erro = assertThrows(ValidacaoException.class, () ->
+    var erro = assertThrows(RecursoNaoEncontradoException.class, () ->
       avaliacaoService.buscarPorAgendamento(10L)
     );
 

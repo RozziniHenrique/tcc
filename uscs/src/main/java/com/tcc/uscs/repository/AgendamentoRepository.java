@@ -17,18 +17,6 @@ import org.springframework.data.repository.query.Param;
 public interface AgendamentoRepository
   extends JpaRepository<Agendamento, Long>
 {
-  Page<Agendamento> findAllByAtivoTrue(Pageable paginacao);
-
-  Page<Agendamento> findAllByClienteIdAndAtivoTrue(
-    Long idCliente,
-    Pageable paginacao
-  );
-
-  Page<Agendamento> findAllByAlunoIdAndAtivoTrue(
-    Long idAluno,
-    Pageable paginacao
-  );
-
   boolean existsByAlunoIdAndDataHoraAndAtivoTrue(
     Long idAluno,
     LocalDateTime dataHora

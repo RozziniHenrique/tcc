@@ -1,7 +1,6 @@
 package com.tcc.uscs.model.usuario;
 
 import com.tcc.uscs.model.funcionario.Funcionario;
-import com.tcc.uscs.model.usuario.dto.DadosCadastroUsuario;
 import jakarta.persistence.*;
 import java.util.Collection;
 import java.util.HashSet;
@@ -51,17 +50,6 @@ public class Usuario implements UserDetails {
   @OneToOne(mappedBy = "usuario", fetch = FetchType.EAGER)
   private Funcionario funcionario;
 
-  public Usuario(DadosCadastroUsuario dados, String senhaCriptografada) {
-    this.nome = dados.nome();
-    this.cpf = dados.cpf();
-    this.email = dados.email();
-    this.senha = senhaCriptografada;
-    this.enderecoCompleto = dados.enderecoCompleto();
-    this.telefone = dados.telefone();
-    this.perfis.add(dados.tipoUsuario());
-    this.ativo = true;
-  }
-
   public void atualizarInformacoes(
     String nome,
     String email,
@@ -78,10 +66,6 @@ public class Usuario implements UserDetails {
     this.ativo = false;
   }
 
-  public void reativar() {
-    this.ativo = true;
-  }
-
   public boolean possuiPerfil(TipoUsuario perfil) {
     return perfis.contains(perfil);
   }
@@ -93,10 +77,6 @@ public class Usuario implements UserDetails {
 
   public void removerPerfil(TipoUsuario perfil) {
     perfis.remove(perfil);
-
-    if (perfis.isEmpty()) {
-      ativo = false;
-    }
   }
 
   @Override

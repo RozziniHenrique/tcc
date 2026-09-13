@@ -1,5 +1,6 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.unidade.Unidade;
 import com.tcc.uscs.model.unidade.dto.AtualizarUnidadeDTO;
@@ -26,37 +27,38 @@ public class UnidadeService {
     return new DetalharUnidadeDTO(unidade);
   }
 
+  @Transactional(readOnly = true)
   public Page<ListarUnidadeDTO> listar(Pageable paginacao) {
     return repository.findAllByAtivoTrue(paginacao).map(ListarUnidadeDTO::new);
   }
 
+  @Transactional(readOnly = true)
   public DetalharUnidadeDTO detalhar(Long id) {
-    var unidade = repository
-      .findByIdAndAtivoTrue(id)
-      .orElseThrow(() ->
-        new ValidacaoException("Unidade não encontrada ou inativa!")
-      );
-    return new DetalharUnidadeDTO(unidade);
+    return new DetalharUnidadeDTO(obterUnidadeAtiva(id));
   }
 
   @Transactional
   public DetalharUnidadeDTO atualizar(Long id, AtualizarUnidadeDTO dados) {
-    var unidade = repository
-      .findByIdAndAtivoTrue(id)
-      .orElseThrow(() ->
-        new ValidacaoException("Unidade não encontrada ou inativa!")
+    if (dados.semAlteracoes()) {
+      throw new ValidacaoException(
+        "Informe pelo menos um campo para realizar a atualização."
       );
+    }
+    var unidade = obterUnidadeAtiva(id);
     unidade.atualizar(dados);
     return new DetalharUnidadeDTO(unidade);
   }
 
   @Transactional
   public void excluir(Long id) {
-    var unidade = repository
+    obterUnidadeAtiva(id).excluir();
+  }
+
+  private Unidade obterUnidadeAtiva(Long id) {
+    return repository
       .findByIdAndAtivoTrue(id)
       .orElseThrow(() ->
-        new ValidacaoException("Unidade não encontrada ou inativa!")
+        new RecursoNaoEncontradoException("Unidade não encontrada ou inativa!")
       );
-    unidade.excluir();
   }
 }

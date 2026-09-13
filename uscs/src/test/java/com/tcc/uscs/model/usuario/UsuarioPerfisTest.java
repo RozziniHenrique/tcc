@@ -25,15 +25,27 @@ class UsuarioPerfisTest {
   }
 
   @Test
-  void removerUltimoPerfilDeveDesativarConta() {
+  void removerUltimoPerfilDeveManterContaAtiva() {
     var usuario = new Usuario();
     usuario.adicionarPerfil(TipoUsuario.CLIENTE);
 
     var cliente = new Cliente(usuario, null);
     cliente.excluir();
 
-    assertFalse(usuario.isEnabled());
+    assertFalse(cliente.getAtivo());
     assertTrue(usuario.getPerfis().isEmpty());
+    assertTrue(usuario.isEnabled());
+  }
+
+  @Test
+  void desativarContaDeveImpedirAutenticacao() {
+    var usuario = new Usuario();
+    usuario.adicionarPerfil(TipoUsuario.CLIENTE);
+
+    usuario.desativar();
+
+    assertFalse(usuario.isEnabled());
+    assertTrue(usuario.possuiPerfil(TipoUsuario.CLIENTE));
   }
 
   @Test
@@ -76,5 +88,6 @@ class UsuarioPerfisTest {
         .stream()
         .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))
     );
+    assertTrue(usuario.isEnabled());
   }
 }

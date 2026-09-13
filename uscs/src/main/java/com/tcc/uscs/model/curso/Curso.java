@@ -50,8 +50,4 @@ public class Curso {
   public void excluir() {
     this.ativo = false;
   }
-
-  public void reativar() {
-    this.ativo = true;
-  }
 }

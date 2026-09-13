@@ -14,4 +14,14 @@ public record AtualizarClienteDTO(
   String telefone,
   @Size(max = 255) String endereco,
   @Size(max = 1000) String observacoes
-) {}
+) {
+  public boolean semAlteracoes() {
+    return (
+      nome == null &&
+      email == null &&
+      telefone == null &&
+      endereco == null &&
+      observacoes == null
+    );
+  }
+}

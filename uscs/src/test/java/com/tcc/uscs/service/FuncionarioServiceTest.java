@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.funcionario.Funcao;
 import com.tcc.uscs.model.funcionario.Funcionario;
@@ -64,8 +65,9 @@ class FuncionarioServiceTest {
       Optional.empty()
     );
 
-    var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
-      funcionarioService.obterEntidadePorId(1L)
+    var excecao = Assertions.assertThrows(
+      RecursoNaoEncontradoException.class,
+      () -> funcionarioService.obterEntidadePorId(1L)
     );
 
     Assertions.assertEquals(
@@ -204,7 +206,7 @@ class FuncionarioServiceTest {
   void cenarioAdicionarPerfilEmUsuarioInexistente() {
     when(usuarioRepository.findById(1L)).thenReturn(Optional.empty());
 
-    var erro = assertThrows(ValidacaoException.class, () ->
+    var erro = assertThrows(RecursoNaoEncontradoException.class, () ->
       funcionarioService.adicionarPerfil(
         1L,
         new AdicionarPerfilFuncionarioDTO(Funcao.PROFESSOR)
@@ -214,5 +216,90 @@ class FuncionarioServiceTest {
     assertEquals("Usuário não encontrado ou inativo.", erro.getMessage());
 
     verify(repository, never()).save(any(Funcionario.class));
+  }
+
+  @Test
+  void deveriaRecusarAtualizacaoVazia() {
+    var dados = new AtualizarFuncionarioDTO(null, null, null, null, null);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      funcionarioService.atualizar(1L, dados)
+    );
+
+    assertEquals(
+      "Informe pelo menos um campo para realizar a atualização.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(repository);
+  }
+
+  @Test
+  void deveriaImpedirExclusaoDoUltimoAdministrador() {
+    var funcionario = mock(Funcionario.class);
+
+    when(funcionario.getFuncao()).thenReturn(Funcao.ADMIN);
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(funcionario)
+    );
+    when(
+      repository.countByFuncaoAndAtivoTrueAndUsuarioAtivoTrue(Funcao.ADMIN)
+    ).thenReturn(1L);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      funcionarioService.excluir(1L)
+    );
+
+    assertEquals(
+      "Não é possível remover o último administrador ativo.",
+      erro.getMessage()
+    );
+    verify(funcionario, never()).excluir();
+  }
+
+  @Test
+  void deveriaImpedirRebaixamentoDoUltimoAdministrador() {
+    var funcionario = mock(Funcionario.class);
+    var dados = new AtualizarFuncionarioDTO(
+      null,
+      null,
+      null,
+      null,
+      Funcao.GESTOR
+    );
+
+    when(funcionario.getFuncao()).thenReturn(Funcao.ADMIN);
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(funcionario)
+    );
+    when(
+      repository.countByFuncaoAndAtivoTrueAndUsuarioAtivoTrue(Funcao.ADMIN)
+    ).thenReturn(1L);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      funcionarioService.atualizar(1L, dados)
+    );
+
+    assertEquals(
+      "Não é possível remover o último administrador ativo.",
+      erro.getMessage()
+    );
+    verify(funcionario, never()).atualizar(any());
+  }
+
+  @Test
+  void deveriaPermitirExcluirAdministradorQuandoExisteOutro() {
+    var funcionario = mock(Funcionario.class);
+
+    when(funcionario.getFuncao()).thenReturn(Funcao.ADMIN);
+    when(repository.findByIdAndAtivoTrueAndUsuarioAtivoTrue(1L)).thenReturn(
+      Optional.of(funcionario)
+    );
+    when(
+      repository.countByFuncaoAndAtivoTrueAndUsuarioAtivoTrue(Funcao.ADMIN)
+    ).thenReturn(2L);
+
+    funcionarioService.excluir(1L);
+
+    verify(funcionario).excluir();
   }
 }

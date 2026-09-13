@@ -1,5 +1,6 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.curso.Curso;
 import com.tcc.uscs.model.curso.dto.AtualizarCursoDTO;
@@ -50,6 +51,11 @@ public class CursoService {
 
   @Transactional
   public DetalharCursoDTO atualizar(Long id, AtualizarCursoDTO dados) {
+    if (dados.semAlteracoes()) {
+      throw new ValidacaoException(
+        "Informe pelo menos um campo para realizar a atualização."
+      );
+    }
     var curso = obterCursoAtivo(id);
 
     var nome = dados.nome() != null ? dados.nome() : curso.getNome();
@@ -84,7 +90,7 @@ public class CursoService {
     return repository
       .findByIdAndAtivoTrue(id)
       .orElseThrow(() ->
-        new ValidacaoException("Curso não encontrado ou inativo.")
+        new RecursoNaoEncontradoException("Curso não encontrado ou inativo.")
       );
   }
 }

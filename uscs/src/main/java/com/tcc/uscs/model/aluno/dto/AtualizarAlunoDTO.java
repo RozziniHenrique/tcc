@@ -2,6 +2,7 @@ package com.tcc.uscs.model.aluno.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record AtualizarAlunoDTO(
@@ -13,5 +14,15 @@ public record AtualizarAlunoDTO(
   )
   String telefone,
   @Size(max = 255) String endereco,
-  Long idCurso
-) {}
+  @Positive Long idCurso
+) {
+  public boolean semAlteracoes() {
+    return (
+      nome == null &&
+      email == null &&
+      telefone == null &&
+      endereco == null &&
+      idCurso == null
+    );
+  }
+}

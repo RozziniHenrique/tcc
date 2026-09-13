@@ -32,7 +32,7 @@ public class SpringDocConfigurations {
           .description(
             "API Rest para o gerenciamento de clientes, alunos, cursos e agendamentos."
           )
-          .version("v6")
+          .version("2.1.0")
       )
       .addSecurityItem(new SecurityRequirement().addList("bearer-key"));
   }
