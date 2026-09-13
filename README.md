@@ -19,7 +19,7 @@ Sistema de gestão integrado para escola de beleza/salão, cobrindo o ciclo comp
 - Recuperação de senha com código de 6 dígitos armazenado apenas como hash.
 - Resposta genérica no fluxo de recuperação para reduzir enumeração de usuários.
 - Erros REST em formato padronizado.
-- Remoção do `StoredProcedureHelper` duplicado.
+- Remoção da cópia duplicada do `StoredProcedureHelper`.
 - Migrations V10 a V12 para segurança, cadastro seguro e controle de status dos agendamentos.
 - Paginação com formato JSON estável para integração com Flutter.
 
@@ -62,7 +62,7 @@ O sistema gerencia o fluxo completo de uma escola de beleza com múltiplas unida
 
 ## 🏗️ Arquitetura
 
-O projeto segue rigorosamente o padrão de **arquitetura em camadas**, com pacotes organizados por domínio:
+O projeto segue o padrão de **arquitetura em camadas**, com pacotes organizados por domínio:
 
 ```
 src/main/java/com/tcc/uscs/
@@ -80,13 +80,17 @@ src/main/java/com/tcc/uscs/
 │   ├── curso/
 │   ├── servico/
 │   ├── unidade/
+│   ├── avaliacao/
+│   ├── relatorio/
+│   ├── me/
 │   └── usuario/         # Enum TipoUsuario: CLIENTE, ALUNO, FUNCIONARIO
 │
 └── infra/
-    ├── security/        # JWT Filter, TokenService, SecurityConfigurations, AutenticacaoService
+    ├── security/        # JWT, filtros, configuração e respostas de autenticação/autorização
     ├── springdoc/       # SpringDocConfigurations + OpenApiCustomizer global
     ├── exception/       # TratadorDeErros (@RestControllerAdvice) + exceções customizadas
-    └── helper/          # StoredProcedureHelper
+    ├── helper/          # StoredProcedureHelper
+    └── web/             # Configuração do formato estável de paginação
 ```
 
 ---
@@ -150,33 +154,42 @@ public OpenApiCustomizer customerGlobalHeaderOpenApiCustomizer() {
 
 O `TratadorDeErros` (`@RestControllerAdvice`) mapeia cada tipo de exceção para um status HTTP e payload descritivo:
 
-| Exceção                           | Status     | Situação                                      |
-| --------------------------------- | ---------- | --------------------------------------------- |
-| `EntityNotFoundException`         | 404        | Entidade não encontrada pelo ID               |
-| `MethodArgumentNotValidException` | 400        | Falha na validação Jakarta (campos inválidos) |
-| `DataIntegrityViolationException` | 400        | Duplicidade detectada pelo JPA                |
-| `PersistenceException`            | 400 ou 500 | Duplicidade ou erro nas Stored Procedures     |
-| `ValidacaoException`              | 400        | Violação de regra de negócio                  |
-| `Exception`                       | 500        | Erro inesperado (com log)                     |
+| Exceção                                          | Status     | Situação                                      |
+| ------------------------------------------------ | ---------- | --------------------------------------------- |
+| `MethodArgumentNotValidException`                | 400        | Falha na validação Jakarta (campos inválidos) |
+| `HttpMessageNotReadableException`                | 400        | Corpo JSON ausente ou malformado              |
+| `MissingServletRequestParameterException`        | 400        | Parâmetro obrigatório ausente                 |
+| `MethodArgumentTypeMismatchException`            | 400        | Parâmetro com formato inválido                |
+| `ValidacaoException`                             | 400        | Violação de regra de negócio                  |
+| `DataIntegrityViolationException`                | 400        | Duplicidade ou integridade inválida           |
+| `PersistenceException`                           | 400 ou 500 | Duplicidade ou erro nas Stored Procedures     |
+| `TokenInvalidoException` / credenciais inválidas | 401        | Falha de autenticação                         |
+| `AccessDeniedException`                          | 403        | Usuário autenticado sem permissão             |
+| `RecursoNaoEncontradoException`                  | 404        | Recurso inexistente ou inativo                |
+| `EntityNotFoundException`                        | 404        | Entidade não encontrada pelo ID               |
+| `NoResourceFoundException`                       | 404        | Rota inexistente                              |
+| `HttpRequestMethodNotSupportedException`         | 405        | Método HTTP não permitido                     |
+| `HttpMediaTypeNotSupportedException`             | 415        | Tipo de conteúdo incompatível                 |
+| `Exception`                                      | 500        | Erro inesperado (com log)                     |
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-| Categoria         | Tecnologia                             |
-| ----------------- | -------------------------------------- |
-| Linguagem         | Java 25                                |
-| Framework         | Spring Boot 3.5.13                     |
-| Segurança         | Spring Security + JWT (auth0 java-jwt) |
-| Persistência      | Spring Data JPA + Hibernate            |
-| Banco de Dados    | MySQL 8                                |
-| Stored Procedures | EntityManager nativo                   |
-| Migrations        | Flyway (flyway-core + flyway-mysql)    |
-| Documentação      | SpringDoc OpenAPI (Swagger UI)         |
-| Validação         | Jakarta Validation                     |
-| Build             | Maven                                  |
-| Utilitários       | Lombok                                 |
-| Testes            | JUnit 5 + Mockito                      |
+| Categoria         | Tecnologia                                    |
+| ----------------- | --------------------------------------------- |
+| Linguagem         | Java 25                                       |
+| Framework         | Spring Boot 3.5.13                            |
+| Segurança         | Spring Security + JWT (auth0 java-jwt)        |
+| Persistência      | Spring Data JPA + Hibernate                   |
+| Banco de Dados    | MySQL 8                                       |
+| Stored Procedures | EntityManager nativo                          |
+| Migrations        | Flyway (flyway-core + flyway-mysql)           |
+| Documentação      | SpringDoc OpenAPI (Swagger UI)                |
+| Validação         | Jakarta Validation                            |
+| Build             | Maven                                         |
+| Utilitários       | Lombok                                        |
+| Testes            | JUnit 5 + Mockito + Spring Security Test + H2 |
 
 ---
 
@@ -194,7 +207,10 @@ agendamentos
     ├── aluno_id      → alunos
     ├── curso_id      → cursos
     ├── unidade_id    → unidades
-    ├── data_hora     (UNIQUE com aluno_id — constraint de conflito no banco)
+    ├── data_hora     → data e horário do atendimento
+    ├── status        → AGENDADO | CONCLUIDO | CANCELADO
+    ├── UNIQUE        → aluno + horário para agendamentos ativos
+    ├── UNIQUE        → cliente + horário para agendamentos ativos
     └── valor_no_ato  (calculado em runtime: soma dos serviços selecionados)
 
 agendamento_servicos (N:N)
@@ -278,7 +294,7 @@ Os testes cobrem:
 - relatórios em JSON, CSV e PDF;
 - avaliações e avaliações pendentes;
 - autorização e validação de posse dos recursos;
-- serialização estável das respostas paginadas.
+- serialização estável das respostas paginadas;
 - seleção automática de aluno disponível por curso e horário;
 - proteção contra remoção do último administrador;
 - independência entre conta e perfis;
@@ -316,6 +332,7 @@ cd tcc/uscs
 mysql -u root -p -e "CREATE DATABASE tccuscs;"
 
 # 3. Configure as variáveis de ambiente
+export DB_URL="jdbc:mysql://localhost:3306/tccuscs?useSSL=false&serverTimezone=America/Sao_Paulo&allowPublicKeyRetrieval=true"
 export DB_USER="root"
 export DB_PASSWORD="sua_senha"
 export JWT_SECRET="uma-chave-secreta-segura-com-pelo-menos-32-caracteres"
@@ -325,6 +342,22 @@ export JWT_SECRET="uma-chave-secreta-segura-com-pelo-menos-32-caracteres"
 ```
 
 No Linux ou macOS, utilize `./mvnw` no lugar de `./mvnw.cmd`.
+
+### Administrador inicial (opcional)
+
+Em um ambiente novo, o primeiro administrador pode ser criado automaticamente. Ative esse recurso somente na primeira inicialização:
+
+```bash
+export APP_BOOTSTRAP_ADMIN_ENABLED="true"
+export APP_BOOTSTRAP_ADMIN_NOME="Administrador"
+export APP_BOOTSTRAP_ADMIN_CPF="12345678901"
+export APP_BOOTSTRAP_ADMIN_EMAIL="admin@exemplo.com"
+export APP_BOOTSTRAP_ADMIN_SENHA="uma-senha-segura"
+export APP_BOOTSTRAP_ADMIN_TELEFONE="11999999999"
+export APP_BOOTSTRAP_ADMIN_ENDERECO="Endereço completo"
+```
+
+Após a criação, desative o bootstrap definindo `APP_BOOTSTRAP_ADMIN_ENABLED=false`.
 
 ### Documentação interativa (Swagger UI)
 
@@ -352,6 +385,8 @@ As rotas de listagem retornam paginação em formato JSON estável:
 }
 ```
 
+---
+
 ## 📊 Endpoints Principais
 
 | Método                | Endpoint                       | Acesso                                 | Descrição                                        |
@@ -363,6 +398,8 @@ As rotas de listagem retornam paginação em formato JSON estável:
 | `POST`                | `/auth/password/verify`        | Público                                | Verifica o código de recuperação                 |
 | `POST`                | `/auth/password/reset`         | Público                                | Redefine a senha e revoga sessões existentes     |
 | `GET/PUT`             | `/me`                          | Autenticado                            | Consulta ou atualiza o próprio perfil            |
+| `POST`                | `/me/perfis/cliente`           | Autenticado                            | Adiciona o perfil de cliente à própria conta     |
+| `POST`                | `/me/perfis/aluno`             | Autenticado                            | Adiciona o perfil de aluno à própria conta       |
 | `POST`                | `/clientes`                    | Público                                | Cadastra um cliente                              |
 | `POST`                | `/alunos`                      | Público                                | Cadastra um aluno                                |
 | `GET/POST/PUT/DELETE` | `/agendamentos/**`             | Autenticado                            | Gerencia agendamentos com validação de posse     |
