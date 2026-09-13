@@ -1,5 +1,6 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.StatusAgendamento;
@@ -77,11 +78,7 @@ public class AgendamentoService {
 
   @Transactional(readOnly = true)
   public DetalharAgendamentoDTO detalhar(Long id) {
-    var agendamento = repository
-      .findById(id)
-      .orElseThrow(() ->
-        new ValidacaoException("Agendamento não encontrado com o ID informado.")
-      );
+    var agendamento = obterAgendamento(id);
     validarPosseDoAgendamento(agendamento);
     return new DetalharAgendamentoDTO(agendamento);
   }
@@ -100,27 +97,34 @@ public class AgendamentoService {
       );
     }
 
-    Long idAluno = dados.idAluno();
-    if (idAluno == null) {
-      idAluno = alunoService.buscarAlunoAleatorio(dados.idCurso());
-    }
-
     var cliente = clienteRepository
       .findByIdAndAtivoTrueAndUsuarioAtivoTrue(dados.idCliente())
       .orElseThrow(() ->
-        new ValidacaoException("Cliente não encontrado ou inativo!")
+        new RecursoNaoEncontradoException("Cliente não encontrado ou inativo!")
       );
+
     var curso = cursoRepository
       .findByIdAndAtivoTrue(dados.idCurso())
       .orElseThrow(() ->
-        new ValidacaoException("Curso não encontrado ou inativo!")
+        new RecursoNaoEncontradoException("Curso não encontrado ou inativo!")
       );
+
+    Long idAluno = dados.idAluno();
+
+    if (idAluno == null) {
+      idAluno = alunoService.buscarAlunoAleatorio(
+        dados.idCurso(),
+        dados.dataHora()
+      );
+    }
 
     var aluno = alunoService.obterEntidadePorIdECurso(idAluno, dados.idCurso());
     var unidade = unidadeRepository
       .findByIdAndAtivoTrue(dados.idUnidade())
       .orElseThrow(() ->
-        new ValidacaoException("Unidade/Franquia não encontrada ou inativa!")
+        new RecursoNaoEncontradoException(
+          "Unidade/Franquia não encontrada ou inativa!"
+        )
       );
 
     List<Servico> servicosSelecionados = servicoService.buscarServicosValidos(
@@ -159,9 +163,7 @@ public class AgendamentoService {
       );
     }
 
-    var agendamento = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Agendamento não encontrado."));
+    var agendamento = obterAgendamento(id);
 
     validarPermissaoParaAlterarOuCancelar(agendamento);
 
@@ -176,7 +178,9 @@ public class AgendamentoService {
         ? cursoRepository
             .findByIdAndAtivoTrue(dados.idCurso())
             .orElseThrow(() ->
-              new ValidacaoException("Curso não encontrado ou inativo!")
+              new RecursoNaoEncontradoException(
+                "Curso não encontrado ou inativo!"
+              )
             )
         : agendamento.getCurso();
     var aluno =
@@ -268,9 +272,7 @@ public class AgendamentoService {
 
   @Transactional
   public void cancelar(Long id, String justificativa) {
-    var agendamento = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Agendamento não encontrado."));
+    var agendamento = obterAgendamento(id);
 
     validarPermissaoParaAlterarOuCancelar(agendamento);
 
@@ -326,9 +328,7 @@ public class AgendamentoService {
 
   @Transactional
   public void concluir(Long id) {
-    var agendamento = repository
-      .findById(id)
-      .orElseThrow(() -> new ValidacaoException("Agendamento não encontrado."));
+    var agendamento = obterAgendamento(id);
 
     validarPermissaoParaConcluir(agendamento);
 
@@ -429,5 +429,13 @@ public class AgendamentoService {
         "Você não tem permissão para concluir este agendamento."
       );
     }
+  }
+
+  private Agendamento obterAgendamento(Long id) {
+    return repository
+      .findById(id)
+      .orElseThrow(() ->
+        new RecursoNaoEncontradoException("Agendamento não encontrado.")
+      );
   }
 }

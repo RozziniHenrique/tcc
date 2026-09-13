@@ -1,5 +1,7 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
+import com.tcc.uscs.infra.exception.TokenInvalidoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.cliente.Cliente;
@@ -34,6 +36,11 @@ public class MeuPerfilService {
 
   @Transactional
   public MeuPerfilDTO atualizar(AtualizarMeuPerfilDTO dados) {
+    if (dados.semAlteracoes()) {
+      throw new ValidacaoException(
+        "Informe pelo menos um campo para realizar a atualização."
+      );
+    }
     var usuario = usuarioAtualGerenciado();
 
     usuario.atualizarInformacoes(
@@ -71,7 +78,7 @@ public class MeuPerfilService {
     var curso = cursoRepository
       .findByIdAndAtivoTrue(dados.idCurso())
       .orElseThrow(() ->
-        new ValidacaoException("Curso não encontrado ou inativo.")
+        new RecursoNaoEncontradoException("Curso não encontrado ou inativo.")
       );
 
     var alunoExistente = alunoRepository.findById(usuario.getId());
@@ -101,7 +108,7 @@ public class MeuPerfilService {
       .findById(principal.getId())
       .filter(Usuario::isEnabled)
       .orElseThrow(() ->
-        new ValidacaoException("Usuário autenticado não encontrado.")
+        new TokenInvalidoException("Usuário autenticado não encontrado.")
       );
   }
 
@@ -114,7 +121,7 @@ public class MeuPerfilService {
       !(authentication.getPrincipal() instanceof Usuario usuario) ||
       !usuario.isEnabled()
     ) {
-      throw new ValidacaoException("Usuário autenticado não encontrado.");
+      throw new TokenInvalidoException("Usuário autenticado não encontrado.");
     }
 
     return usuario;

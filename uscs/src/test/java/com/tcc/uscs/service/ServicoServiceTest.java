@@ -3,6 +3,7 @@ package com.tcc.uscs.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.servico.Servico;
 import com.tcc.uscs.model.servico.dto.AtualizarServicoDTO;
@@ -93,7 +94,7 @@ class ServicoServiceTest {
   void deveriaRecusarServicoInexistenteOuInativo() {
     when(repository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.empty());
 
-    var erro = assertThrows(ValidacaoException.class, () ->
+    var erro = assertThrows(RecursoNaoEncontradoException.class, () ->
       service.detalhar(1L)
     );
 
@@ -146,5 +147,20 @@ class ServicoServiceTest {
       "Um ou mais serviços informados não foram encontrados ou estão inativos!",
       erro.getMessage()
     );
+  }
+
+  @Test
+  void deveriaRecusarAtualizacaoVazia() {
+    var dados = new AtualizarServicoDTO(null, null, null);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      service.atualizar(1L, dados)
+    );
+
+    assertEquals(
+      "Informe pelo menos um campo para realizar a atualização.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(repository);
   }
 }

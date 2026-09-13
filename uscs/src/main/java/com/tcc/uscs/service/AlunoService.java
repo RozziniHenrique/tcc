@@ -1,5 +1,6 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.infra.helper.StoredProcedureHelper;
 import com.tcc.uscs.model.aluno.Aluno;
@@ -13,6 +14,7 @@ import com.tcc.uscs.repository.CursoRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.StoredProcedureQuery;
+import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,30 +35,43 @@ public class AlunoService {
   private final CadastroUsuarioValidator cadastroUsuarioValidator;
   private final CursoRepository cursoRepository;
 
-  public Long buscarAlunoAleatorio(Long idCurso) {
-    var disponiveis =
-      repository.findAllByCursoIdAndAtivoTrueAndUsuarioAtivoTrue(idCurso);
+  @Transactional(readOnly = true)
+  public Long buscarAlunoAleatorio(Long idCurso, LocalDateTime dataHora) {
+    var disponiveis = repository.buscarDisponiveisPorCursoEHorario(
+      idCurso,
+      dataHora
+    );
 
     if (disponiveis.isEmpty()) {
-      throw new ValidacaoException("Nenhum aluno disponível para este curso.");
+      throw new ValidacaoException(
+        "Nenhum aluno disponível para este curso e horário."
+      );
     }
+
     int indiceAleatorio = ThreadLocalRandom.current().nextInt(
       disponiveis.size()
     );
+
     return disponiveis.get(indiceAleatorio).getId();
   }
 
+  @Transactional(readOnly = true)
   public Aluno obterEntidadePorId(Long id) {
     return repository
       .findByIdAndAtivoTrueAndUsuarioAtivoTrue(id)
       .orElseThrow(() ->
-        new ValidacaoException("Aluno não encontrado ou inativo!")
+        new RecursoNaoEncontradoException("Aluno não encontrado ou inativo!")
       );
   }
 
   @Transactional
   public DetalharAlunoDTO cadastrar(CadastrarAlunoDTO dados) {
     cadastroUsuarioValidator.validarNovoUsuario(dados.cpf(), dados.email());
+    cursoRepository
+      .findByIdAndAtivoTrue(dados.idCurso())
+      .orElseThrow(() ->
+        new RecursoNaoEncontradoException("Curso não encontrado ou inativo.")
+      );
     String senhaCriptografada = passwordEncoder.encode(dados.senha());
 
     StoredProcedureQuery query = entityManager.createStoredProcedureQuery(
@@ -92,12 +107,14 @@ public class AlunoService {
     return detalharPorId(idGerado);
   }
 
+  @Transactional(readOnly = true)
   public Page<ListarAlunoDTO> listar(Pageable paginacao) {
     return repository
       .findAllByAtivoTrueAndUsuarioAtivoTrue(paginacao)
       .map(ListarAlunoDTO::new);
   }
 
+  @Transactional(readOnly = true)
   public DetalharAlunoDTO detalhar(Long id) {
     validarPosseDoRecurso(id);
     return detalharPorId(id);
@@ -105,6 +122,11 @@ public class AlunoService {
 
   @Transactional
   public DetalharAlunoDTO atualizar(Long id, AtualizarAlunoDTO dados) {
+    if (dados.semAlteracoes()) {
+      throw new ValidacaoException(
+        "Informe pelo menos um campo para realizar a atualização."
+      );
+    }
     validarPosseDoRecurso(id);
     var aluno = obterEntidadePorId(id);
     aluno.atualizar(dados);
@@ -112,7 +134,7 @@ public class AlunoService {
       var curso = cursoRepository
         .findByIdAndAtivoTrue(dados.idCurso())
         .orElseThrow(() ->
-          new ValidacaoException("Curso não encontrado ou inativo.")
+          new RecursoNaoEncontradoException("Curso não encontrado ou inativo.")
         );
 
       aluno.setCurso(curso);

@@ -53,7 +53,7 @@ class AvaliacaoControllerTest {
             """
           )
       )
-      .andExpect(status().isForbidden());
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -183,6 +183,25 @@ class AvaliacaoControllerTest {
   void deveriaNegarConsultaSemAutenticacao() throws Exception {
     mvc
       .perform(get("/avaliacoes/agendamento/10"))
-      .andExpect(status().isForbidden());
+      .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  @WithMockUser(roles = "CLIENTE")
+  void deveriaRecusarIdDeAgendamentoInvalido() throws Exception {
+    mvc
+      .perform(
+        post("/avaliacoes")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(
+            """
+            {
+              "idAgendamento": -1,
+              "nota": 5
+            }
+            """
+          )
+      )
+      .andExpect(status().isBadRequest());
   }
 }

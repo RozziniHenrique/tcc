@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
+import com.tcc.uscs.infra.exception.TokenInvalidoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.cliente.Cliente;
@@ -147,7 +149,7 @@ class MeuPerfilServiceTest {
       Optional.empty()
     );
 
-    var erro = assertThrows(ValidacaoException.class, () ->
+    var erro = assertThrows(RecursoNaoEncontradoException.class, () ->
       service.adicionarPerfilAluno(new AdicionarPerfilAlunoDTO(10L))
     );
 
@@ -159,7 +161,7 @@ class MeuPerfilServiceTest {
   void deveRecusarQuandoNaoExisteAutenticacao() {
     SecurityContextHolder.clearContext();
 
-    assertThrows(ValidacaoException.class, () -> service.detalhar());
+    assertThrows(TokenInvalidoException.class, () -> service.detalhar());
 
     verifyNoInteractions(usuarioRepository);
   }
@@ -176,7 +178,7 @@ class MeuPerfilServiceTest {
     SecurityContextHolder.getContext().setAuthentication(authentication);
     when(usuario.isEnabled()).thenReturn(false);
 
-    assertThrows(ValidacaoException.class, () -> service.detalhar());
+    assertThrows(TokenInvalidoException.class, () -> service.detalhar());
   }
 
   private Usuario autenticarUsuario(TipoUsuario perfilInicial) {
@@ -185,7 +187,7 @@ class MeuPerfilServiceTest {
     perfis.add(perfilInicial);
 
     when(usuario.isEnabled()).thenReturn(true);
-    when(usuario.getPerfis()).thenReturn(perfis);
+    lenient().when(usuario.getPerfis()).thenReturn(perfis);
 
     var authentication = new UsernamePasswordAuthenticationToken(
       usuario,
@@ -196,5 +198,31 @@ class MeuPerfilServiceTest {
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
     return usuario;
+  }
+
+  @Test
+  void deveRecusarAtualizacaoVazia() {
+    var dados = new AtualizarMeuPerfilDTO(null, null, null);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      service.atualizar(dados)
+    );
+
+    assertEquals(
+      "Informe pelo menos um campo para realizar a atualização.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(usuarioRepository);
+  }
+
+  @Test
+  void deveRecusarUsuarioAutenticadoNaoEncontradoNoBanco() {
+    var usuario = autenticarUsuario(TipoUsuario.CLIENTE);
+    when(usuario.getId()).thenReturn(1L);
+    when(usuarioRepository.findById(1L)).thenReturn(Optional.empty());
+
+    var dados = new AtualizarMeuPerfilDTO("Henrique", null, null);
+
+    assertThrows(TokenInvalidoException.class, () -> service.atualizar(dados));
   }
 }

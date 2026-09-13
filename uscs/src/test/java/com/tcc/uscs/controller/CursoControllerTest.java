@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.model.curso.dto.AtualizarCursoDTO;
 import com.tcc.uscs.model.curso.dto.CadastrarCursoDTO;
 import com.tcc.uscs.model.curso.dto.DetalharCursoDTO;
@@ -56,7 +57,10 @@ class CursoControllerTest {
 
   @Test
   void deveriaRecusarUsuarioNaoAutenticado() throws Exception {
-    mvc.perform(get("/cursos")).andExpect(status().isForbidden());
+    mvc
+      .perform(get("/cursos"))
+      .andExpect(status().isUnauthorized())
+      .andExpect(jsonPath("$.error").value("UNAUTHORIZED"));
   }
 
   @Test
@@ -161,5 +165,63 @@ class CursoControllerTest {
     mvc.perform(delete("/cursos/1")).andExpect(status().isNoContent());
 
     verify(service).excluir(1L);
+  }
+
+  @Test
+  @WithMockUser(roles = "PROFESSOR")
+  void deveriaRetornar400ParaJsonMalformado() throws Exception {
+    mvc
+      .perform(
+        post("/cursos")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("{\"nome\":")
+      )
+      .andExpect(status().isBadRequest())
+      .andExpect(jsonPath("$.error").value("MALFORMED_JSON"));
+  }
+
+  @Test
+  @WithMockUser(roles = "PROFESSOR")
+  void deveriaRetornar405ParaMetodoNaoPermitido() throws Exception {
+    mvc
+      .perform(
+        patch("/cursos/1").contentType(MediaType.APPLICATION_JSON).content("{}")
+      )
+      .andExpect(status().isMethodNotAllowed())
+      .andExpect(jsonPath("$.error").value("METHOD_NOT_ALLOWED"));
+  }
+
+  @Test
+  @WithMockUser(roles = "PROFESSOR")
+  void deveriaRetornar415ParaTipoDeConteudoInvalido() throws Exception {
+    mvc
+      .perform(post("/cursos").contentType(MediaType.TEXT_PLAIN).content("{}"))
+      .andExpect(status().isUnsupportedMediaType())
+      .andExpect(jsonPath("$.error").value("UNSUPPORTED_MEDIA_TYPE"));
+  }
+
+  @Test
+  @WithMockUser
+  void deveriaRetornar404ParaRotaInexistente() throws Exception {
+    mvc
+      .perform(get("/rota-inexistente"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error").value("NOT_FOUND"));
+  }
+
+  @Test
+  @WithMockUser(roles = "CLIENTE")
+  void deveriaRetornar404ParaCursoInexistente() throws Exception {
+    when(service.detalhar(999L)).thenThrow(
+      new RecursoNaoEncontradoException("Curso não encontrado ou inativo.")
+    );
+
+    mvc
+      .perform(get("/cursos/999"))
+      .andExpect(status().isNotFound())
+      .andExpect(jsonPath("$.error").value("NOT_FOUND"))
+      .andExpect(
+        jsonPath("$.message").value("Curso não encontrado ou inativo.")
+      );
   }
 }

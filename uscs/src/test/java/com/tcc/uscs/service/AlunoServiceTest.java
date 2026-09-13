@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.aluno.dto.AtualizarAlunoDTO;
@@ -17,6 +18,7 @@ import com.tcc.uscs.repository.AlunoRepository;
 import com.tcc.uscs.repository.CursoRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.StoredProcedureQuery;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -88,35 +90,38 @@ class AlunoServiceTest {
   }
 
   @Test
-  @DisplayName("Deveria retornar ID de aluno aleatório disponível para o curso")
+  @DisplayName("Deveria retornar ID de aluno disponível para o curso e horário")
   void cenarioBuscarAlunoAleatorioSucesso() {
+    var dataHora = LocalDateTime.of(2026, 10, 1, 14, 0);
     var alunoMock = mock(Aluno.class);
+
     when(alunoMock.getId()).thenReturn(10L);
+    when(repository.buscarDisponiveisPorCursoEHorario(1L, dataHora)).thenReturn(
+      List.of(alunoMock)
+    );
 
-    when(
-      repository.findAllByCursoIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
-    ).thenReturn(List.of(alunoMock));
-
-    var idAluno = alunoService.buscarAlunoAleatorio(1L);
+    var idAluno = alunoService.buscarAlunoAleatorio(1L, dataHora);
 
     Assertions.assertEquals(10L, idAluno);
   }
 
   @Test
   @DisplayName(
-    "Deveria lançar erro ao buscar aluno aleatório se não houver nenhum disponível"
+    "Deveria lançar erro quando não houver aluno disponível no horário"
   )
   void cenarioBuscarAlunoAleatorioSemDisponibilidade() {
-    when(
-      repository.findAllByCursoIdAndAtivoTrueAndUsuarioAtivoTrue(1L)
-    ).thenReturn(Collections.emptyList());
+    var dataHora = LocalDateTime.of(2026, 10, 1, 14, 0);
+
+    when(repository.buscarDisponiveisPorCursoEHorario(1L, dataHora)).thenReturn(
+      Collections.emptyList()
+    );
 
     var excecao = Assertions.assertThrows(ValidacaoException.class, () ->
-      alunoService.buscarAlunoAleatorio(1L)
+      alunoService.buscarAlunoAleatorio(1L, dataHora)
     );
 
     Assertions.assertEquals(
-      "Nenhum aluno disponível para este curso.",
+      "Nenhum aluno disponível para este curso e horário.",
       excecao.getMessage()
     );
   }
@@ -124,6 +129,11 @@ class AlunoServiceTest {
   @Test
   @DisplayName("Deveria cadastrar aluno com sucesso via Stored Procedure")
   void cenarioCadastrarComSucesso() {
+    var curso = mock(Curso.class);
+
+    when(cursoRepository.findByIdAndAtivoTrue(1L)).thenReturn(
+      Optional.of(curso)
+    );
     var dtoCadastro = mock(CadastrarAlunoDTO.class);
     when(dtoCadastro.senha()).thenReturn("123456");
     when(dtoCadastro.idCurso()).thenReturn(1L);
@@ -226,7 +236,7 @@ class AlunoServiceTest {
       Optional.empty()
     );
 
-    var erro = assertThrows(ValidacaoException.class, () ->
+    var erro = assertThrows(RecursoNaoEncontradoException.class, () ->
       alunoService.atualizar(1L, dados)
     );
 
@@ -272,5 +282,38 @@ class AlunoServiceTest {
       "O aluno informado não pertence ao curso selecionado.",
       erro.getMessage()
     );
+  }
+
+  @Test
+  @DisplayName("Deveria recusar cadastro com curso inexistente ou inativo")
+  void cenarioCadastrarComCursoInvalido() {
+    var dados = mock(CadastrarAlunoDTO.class);
+
+    when(dados.idCurso()).thenReturn(999L);
+    when(cursoRepository.findByIdAndAtivoTrue(999L)).thenReturn(
+      Optional.empty()
+    );
+
+    var erro = assertThrows(RecursoNaoEncontradoException.class, () ->
+      alunoService.cadastrar(dados)
+    );
+
+    assertEquals("Curso não encontrado ou inativo.", erro.getMessage());
+    verifyNoInteractions(entityManager, passwordEncoder);
+  }
+
+  @Test
+  void deveriaRecusarAtualizacaoVazia() {
+    var dados = new AtualizarAlunoDTO(null, null, null, null, null);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      alunoService.atualizar(1L, dados)
+    );
+
+    assertEquals(
+      "Informe pelo menos um campo para realizar a atualização.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(repository);
   }
 }

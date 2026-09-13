@@ -15,4 +15,6 @@ public interface FuncionarioRepository
   Optional<Funcionario> findByIdAndAtivoTrueAndUsuarioAtivoTrue(Long id);
 
   boolean existsByFuncaoAndAtivoTrueAndUsuarioAtivoTrue(Funcao funcao);
+
+  long countByFuncaoAndAtivoTrueAndUsuarioAtivoTrue(Funcao funcao);
 }

@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfigurations {
 
   private final SecurityFilter securityFilter;
+  private final SecurityErrorHandler securityErrorHandler;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http)
@@ -28,6 +29,11 @@ public class SecurityConfigurations {
       .csrf(csrf -> csrf.disable())
       .sessionManagement(sm ->
         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+      )
+      .exceptionHandling(ex ->
+        ex
+          .authenticationEntryPoint(securityErrorHandler)
+          .accessDeniedHandler(securityErrorHandler)
       )
       .authorizeHttpRequests(req -> {
         // Rotas públicas

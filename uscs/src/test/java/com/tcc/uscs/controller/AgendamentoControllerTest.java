@@ -58,10 +58,10 @@ class AgendamentoControllerTest {
 
   @Test
   @DisplayName(
-    "Deveria devolver código HTTP 403 quando requisição não estiver autenticada"
+    "Deveria devolver código HTTP 401 quando requisição não estiver autenticada"
   )
   void cenarioAcessoSemToken() throws Exception {
-    mvc.perform(post("/agendamentos")).andExpect(status().isForbidden());
+    mvc.perform(post("/agendamentos")).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -308,6 +308,20 @@ class AgendamentoControllerTest {
         post("/agendamentos")
           .contentType(MediaType.APPLICATION_JSON)
           .content(cadastrarAgendamentoDtoJson.write(dados).getJson())
+      )
+      .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  @WithMockUser(roles = "CLIENTE")
+  void deveriaRecusarJustificativaMuitoLonga() throws Exception {
+    var dados = new CancelamentoRequestDTO("a".repeat(256));
+
+    mvc
+      .perform(
+        delete("/agendamentos/1")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content(cancelamentoRequestDtoJson.write(dados).getJson())
       )
       .andExpect(status().isBadRequest());
   }

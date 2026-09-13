@@ -15,4 +15,14 @@ public record AtualizarFuncionarioDTO(
   String telefone,
   @Size(max = 255) String endereco,
   Funcao funcao
-) {}
+) {
+  public boolean semAlteracoes() {
+    return (
+      nome == null &&
+      email == null &&
+      telefone == null &&
+      endereco == null &&
+      funcao == null
+    );
+  }
+}

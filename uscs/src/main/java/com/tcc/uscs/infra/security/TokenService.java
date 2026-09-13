@@ -45,10 +45,6 @@ public class TokenService {
     }
   }
 
-  public String gerarToken(Usuario usuario) {
-    return gerarAccessToken(usuario);
-  }
-
   public String getSubject(String tokenJWT) {
     try {
       var algoritmo = Algorithm.HMAC256(secret);

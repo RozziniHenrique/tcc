@@ -1,8 +1,10 @@
 package com.tcc.uscs.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.curso.Curso;
 import com.tcc.uscs.model.curso.dto.AtualizarCursoDTO;
@@ -109,7 +111,7 @@ class CursoServiceTest {
   void deveriaRecusarCursoInexistenteOuInativo() {
     when(repository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.empty());
 
-    var erro = assertThrows(ValidacaoException.class, () ->
+    var erro = assertThrows(RecursoNaoEncontradoException.class, () ->
       service.detalhar(1L)
     );
 
@@ -177,5 +179,20 @@ class CursoServiceTest {
     service.excluir(1L);
 
     assertFalse(curso.getAtivo());
+  }
+
+  @Test
+  void deveriaRecusarAtualizacaoVazia() {
+    var dados = new AtualizarCursoDTO(null, null, null, null, null, null);
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      service.atualizar(1L, dados)
+    );
+
+    assertEquals(
+      "Informe pelo menos um campo para realizar a atualização.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(repository);
   }
 }

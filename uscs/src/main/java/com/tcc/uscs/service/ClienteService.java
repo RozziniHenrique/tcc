@@ -1,5 +1,6 @@
 package com.tcc.uscs.service;
 
+import com.tcc.uscs.infra.exception.RecursoNaoEncontradoException;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.infra.helper.StoredProcedureHelper;
 import com.tcc.uscs.model.cliente.Cliente;
@@ -30,11 +31,12 @@ public class ClienteService {
   private final PasswordEncoder passwordEncoder;
   private final CadastroUsuarioValidator cadastroUsuarioValidator;
 
+  @Transactional(readOnly = true)
   public Cliente obterEntidadePorId(Long id) {
     return repository
       .findByIdAndAtivoTrueAndUsuarioAtivoTrue(id)
       .orElseThrow(() ->
-        new ValidacaoException("Cliente não encontrado ou inativo!")
+        new RecursoNaoEncontradoException("Cliente não encontrado ou inativo!")
       );
   }
 
@@ -76,12 +78,14 @@ public class ClienteService {
     return detalharPorId(idGerado);
   }
 
+  @Transactional(readOnly = true)
   public Page<ListarClienteDTO> listar(Pageable paginacao) {
     return repository
       .findAllByAtivoTrueAndUsuarioAtivoTrue(paginacao)
       .map(ListarClienteDTO::new);
   }
 
+  @Transactional(readOnly = true)
   public DetalharClienteDTO detalhar(Long id) {
     validarPosseDoRecurso(id);
     return detalharPorId(id);
@@ -89,6 +93,11 @@ public class ClienteService {
 
   @Transactional
   public DetalharClienteDTO atualizar(Long id, AtualizarClienteDTO dados) {
+    if (dados.semAlteracoes()) {
+      throw new ValidacaoException(
+        "Informe pelo menos um campo para realizar a atualização."
+      );
+    }
     validarPosseDoRecurso(id);
     var cliente = obterEntidadePorId(id);
     cliente.atualizar(dados);

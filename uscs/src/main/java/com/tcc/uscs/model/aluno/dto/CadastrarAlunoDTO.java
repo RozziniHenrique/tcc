@@ -3,13 +3,30 @@ package com.tcc.uscs.model.aluno.dto;
 import jakarta.validation.constraints.*;
 
 public record CadastrarAlunoDTO(
-  @NotBlank String nome,
-  @NotBlank @Email String email,
+  @NotBlank @Size(min = 2, max = 255) String nome,
+
+  @NotBlank @Email @Size(max = 100) String email,
+
   @NotBlank
-  @Size(min = 8, max = 72, message = "A senha deve ter pelo menos 8 caracteres")
+  @Size(
+    min = 8,
+    max = 72,
+    message = "A senha deve conter entre 8 e 72 caracteres"
+  )
   String senha,
-  @NotBlank String telefone,
-  @NotBlank @Pattern(regexp = "\\d{11}") String cpf,
-  @NotBlank String endereco,
-  @NotNull Long idCurso
+
+  @NotBlank
+  @Pattern(
+    regexp = "\\d{10,11}",
+    message = "O telefone deve conter 10 ou 11 dígitos"
+  )
+  String telefone,
+
+  @NotBlank
+  @Pattern(regexp = "\\d{11}", message = "O CPF deve conter 11 dígitos")
+  String cpf,
+
+  @NotBlank @Size(max = 255) String endereco,
+
+  @NotNull @Positive Long idCurso
 ) {}
