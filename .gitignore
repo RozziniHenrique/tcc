@@ -25,6 +25,8 @@ Thumbs.db
 # --- Variáveis de ambiente (Segurança) ---
 .env
 .env.*
+**/.env
+
 # Permite versionar o modelo seguro de variáveis
 !.env.example
 !**/.env.example
