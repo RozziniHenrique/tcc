@@ -65,7 +65,7 @@ O sistema gerencia o fluxo completo de uma escola de beleza com múltiplas unida
 O projeto segue o padrão de **arquitetura em camadas**, com pacotes organizados por domínio:
 
 ```
-src/main/java/com/tcc/uscs/
+src/main/java/com/tcc/backend/
 │
 ├── controller/          # Endpoints REST — recebe requisições e delega ao Service
 ├── service/             # Regras de negócio e orquestração
@@ -326,7 +326,7 @@ O Maven não precisa estar instalado, pois o projeto possui Maven Wrapper.
 ```bash
 # 1. Clone o repositório
 git clone https://github.com/RozziniHenrique/tcc.git
-cd tcc/uscs
+cd tcc/backend
 
 # 2. Crie o banco de dados
 mysql -u root -p -e "CREATE DATABASE tccuscs;"
