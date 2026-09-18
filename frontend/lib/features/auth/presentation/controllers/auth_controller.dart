@@ -56,4 +56,16 @@ class AuthController extends AsyncNotifier<AuthenticatedUser?> {
 
     return !state.hasError;
   }
+
+  Future<void> logout() async {
+    try {
+      await _repository.logout();
+    } finally {
+      state = const AsyncData(null);
+    }
+  }
+
+  void replaceUser(AuthenticatedUser user) {
+    state = AsyncData(user);
+  }
 }

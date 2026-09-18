@@ -147,14 +147,16 @@ class RelatorioServiceTest {
   }
 
   @Test
-  void deveriaInformarQuandoNaoExistiremResultados() {
+  void deveriaRetornarRelatorioVazioQuandoNaoExistiremResultados() {
     when(
       agendamentoRepository.calcularFaturamentoPorPeriodo(
         inicio.atStartOfDay(),
         fim.atTime(LocalTime.MAX)
       )
     ).thenReturn(null);
+
     when(agendamentoRepository.contarAlunosPorCurso()).thenReturn(List.of());
+
     when(
       agendamentoRepository.calcularAgendamentosPorCurso(
         inicio.atStartOfDay(),
@@ -162,10 +164,11 @@ class RelatorioServiceTest {
       )
     ).thenReturn(List.of());
 
-    var erro = assertThrows(ValidacaoException.class, () ->
-      relatorioService.gerarRelatorioCompleto(inicio, fim)
-    );
+    var resultado = relatorioService.gerarRelatorioCompleto(inicio, fim);
 
-    assertEquals("Nenhum resultado encontrado.", erro.getMessage());
+    assertEquals(0L, resultado.resumo().totalAgendamentos());
+    assertEquals(BigDecimal.ZERO, resultado.resumo().faturamentoTotal());
+    assertTrue(resultado.alunosPorCurso().isEmpty());
+    assertTrue(resultado.agendamentosPorCurso().isEmpty());
   }
 }

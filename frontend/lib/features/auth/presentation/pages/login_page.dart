@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../controllers/auth_controller.dart';
 
@@ -42,18 +43,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    final user = authState.value;
-
-    if (user != null) {
-      return Scaffold(
-        body: Center(
-          child: Text(
-            'Olá, ${user.name}!',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
       body: SafeArea(
@@ -161,6 +150,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                   ),
                                 )
                               : const Text('Entrar'),
+                        ),
+                        TextButton(
+                          onPressed: authState.isLoading
+                              ? null
+                              : () => context.go('/recuperar-senha'),
+                          child: const Text('Esqueci minha senha'),
+                        ),
+                        TextButton(
+                          onPressed: authState.isLoading
+                              ? null
+                              : () => context.go('/cadastro'),
+                          child: const Text('Criar conta de cliente'),
                         ),
                       ],
                     ),

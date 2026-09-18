@@ -32,10 +32,6 @@ public class RelatorioService {
     var alunosPorCurso = gerarRelatorioAlunosPorCurso();
     var agendamentosPorCurso = gerarRelatorioAgendamentosPorCurso(inicio, fim);
 
-    if (alunosPorCurso.isEmpty() && agendamentosPorCurso.isEmpty()) {
-      throw new ValidacaoException("Nenhum resultado encontrado.");
-    }
-
     return new RelatorioCompletoDTO(
       inicio,
       fim,

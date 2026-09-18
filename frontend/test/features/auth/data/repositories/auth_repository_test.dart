@@ -106,4 +106,86 @@ void main() {
 
     verify(() => dio.get<Map<String, dynamic>>('/me')).called(1);
   });
+
+  test('deve revogar o refresh token e limpar a sessão no logout', () async {
+    when(() => tokenStorage.readRefreshToken())
+        .thenAnswer((_) async => 'refresh-token');
+    when(
+      () => dio.post<void>(
+        '/auth/logout',
+        data: {'refreshToken': 'refresh-token'},
+      ),
+    ).thenAnswer(
+      (_) async => Response<void>(
+        statusCode: 204,
+        requestOptions: RequestOptions(path: '/auth/logout'),
+      ),
+    );
+    when(() => tokenStorage.deleteTokens()).thenAnswer((_) async {});
+
+    await repository.logout();
+
+    verify(
+      () => dio.post<void>(
+        '/auth/logout',
+        data: {'refreshToken': 'refresh-token'},
+      ),
+    ).called(1);
+    verify(() => tokenStorage.deleteTokens()).called(1);
+  });
+
+  test('deve limpar a sessão mesmo quando o logout remoto falhar', () async {
+    when(() => tokenStorage.readRefreshToken())
+        .thenAnswer((_) async => 'refresh-token');
+    when(
+      () => dio.post<void>(
+        '/auth/logout',
+        data: {'refreshToken': 'refresh-token'},
+      ),
+    ).thenThrow(
+      DioException(
+        requestOptions: RequestOptions(path: '/auth/logout'),
+        type: DioExceptionType.connectionError,
+      ),
+    );
+    when(() => tokenStorage.deleteTokens()).thenAnswer((_) async {});
+
+    await expectLater(repository.logout(), throwsA(isA<DioException>()));
+
+    verify(() => tokenStorage.deleteTokens()).called(1);
+  });
+
+  test('deve cadastrar uma conta de cliente', () async {
+    when(() => dio.post<void>('/clientes', data: any(named: 'data')))
+        .thenAnswer(
+          (_) async => Response<void>(
+            statusCode: 201,
+            requestOptions: RequestOptions(path: '/clientes'),
+          ),
+        );
+
+    await repository.registerClient(
+      name: 'Cliente Teste',
+      email: 'cliente@stfer.com',
+      password: 'senhaSegura123',
+      phone: '11999999999',
+      cpf: '12345678901',
+      address: 'Rua Teste, 10',
+    );
+
+    verify(
+      () => dio.post<void>(
+        '/clientes',
+        data: {
+          'nome': 'Cliente Teste',
+          'email': 'cliente@stfer.com',
+          'senha': 'senhaSegura123',
+          'telefone': '11999999999',
+          'cpf': '12345678901',
+          'endereco': 'Rua Teste, 10',
+          'observacoes': null,
+        },
+      ),
+    ).called(1);
+  });
 }

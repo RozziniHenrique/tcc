@@ -20,7 +20,9 @@ class ApiClient {
             ),
           ) {
     if (tokenStorage != null) {
-      this.dio.interceptors.add(AuthInterceptor(tokenStorage));
+      this.dio.interceptors.add(
+        AuthInterceptor(dio: this.dio, tokenStorage: tokenStorage),
+      );
     }
   }
 
