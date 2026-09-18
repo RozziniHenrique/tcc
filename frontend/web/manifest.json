@@ -1,12 +1,12 @@
 {
-    "name": "stfer_app",
-    "short_name": "stfer_app",
+    "name": "STFER",
+    "short_name": "STFER",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "description": "Gestão e agendamentos do STFER.",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
