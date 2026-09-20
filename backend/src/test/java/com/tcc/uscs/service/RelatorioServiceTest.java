@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.relatorio.dto.AgendamentosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
+import com.tcc.uscs.model.relatorio.dto.DesempenhoAlunoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
 import com.tcc.uscs.repository.AgendamentoRepository;
 import java.math.BigDecimal;
@@ -118,6 +119,60 @@ class RelatorioServiceTest {
     );
 
     assertEquals(agendamentos, resultado);
+  }
+
+  @Test
+  void deveriaRetornarDesempenhoDosAlunos() {
+    var desempenho = List.of(
+      new DesempenhoAlunoRelatorioDTO(
+        1L,
+        "Aluno Teste",
+        2L,
+        "Estética",
+        8L,
+        6L,
+        1L,
+        4.5,
+        6L
+      )
+    );
+
+    when(
+      agendamentoRepository.calcularDesempenhoAlunos(
+        inicio.atStartOfDay(),
+        fim.atTime(LocalTime.MAX),
+        2L,
+        1L
+      )
+    ).thenReturn(desempenho);
+
+    var resultado = relatorioService.gerarDesempenhoAlunos(
+      inicio,
+      fim,
+      2L,
+      1L
+    );
+
+    assertEquals(desempenho, resultado);
+    verify(agendamentoRepository).calcularDesempenhoAlunos(
+      inicio.atStartOfDay(),
+      fim.atTime(LocalTime.MAX),
+      2L,
+      1L
+    );
+  }
+
+  @Test
+  void deveriaRecusarFiltroDeDesempenhoInvalido() {
+    var erro = assertThrows(ValidacaoException.class, () ->
+      relatorioService.gerarDesempenhoAlunos(inicio, fim, 0L, null)
+    );
+
+    assertEquals(
+      "O identificador de curso deve ser positivo.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(agendamentoRepository);
   }
 
   @Test

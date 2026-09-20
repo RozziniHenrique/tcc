@@ -5,6 +5,7 @@ import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.avaliacao.dto.AvaliacaoPendenteDTO;
 import com.tcc.uscs.model.relatorio.dto.AgendamentosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
+import com.tcc.uscs.model.relatorio.dto.DesempenhoAlunoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -84,6 +85,47 @@ public interface AgendamentoRepository
   List<AgendamentosPorCursoRelatorioDTO> calcularAgendamentosPorCurso(
     @Param("inicio") LocalDateTime inicio,
     @Param("fim") LocalDateTime fim
+  );
+
+  @Query(
+    """
+      SELECT new com.tcc.uscs.model.relatorio.dto.DesempenhoAlunoRelatorioDTO(
+        al.id,
+        u.nome,
+        c.id,
+        c.nome,
+        COUNT(a),
+        SUM(CASE
+          WHEN a.status = com.tcc.uscs.model.agendamento.StatusAgendamento.CONCLUIDO
+          THEN 1L ELSE 0L
+        END),
+        SUM(CASE
+          WHEN a.status = com.tcc.uscs.model.agendamento.StatusAgendamento.CANCELADO
+          THEN 1L ELSE 0L
+        END),
+        AVG(av.nota),
+        COUNT(av)
+      )
+      FROM Agendamento a
+      JOIN a.aluno al
+      JOIN al.usuario u
+      JOIN a.curso c
+      LEFT JOIN Avaliacao av ON av.agendamento = a
+      WHERE a.dataHora BETWEEN :inicio AND :fim
+        AND al.ativo = true
+        AND u.ativo = true
+        AND c.ativo = true
+        AND (:idCurso IS NULL OR c.id = :idCurso)
+        AND (:idAluno IS NULL OR al.id = :idAluno)
+      GROUP BY al.id, u.nome, c.id, c.nome
+      ORDER BY u.nome
+    """
+  )
+  List<DesempenhoAlunoRelatorioDTO> calcularDesempenhoAlunos(
+    @Param("inicio") LocalDateTime inicio,
+    @Param("fim") LocalDateTime fim,
+    @Param("idCurso") Long idCurso,
+    @Param("idAluno") Long idAluno
   );
 
   boolean existsByAlunoIdAndDataHoraAndAtivoTrueAndIdNot(

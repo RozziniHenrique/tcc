@@ -67,7 +67,15 @@ public class SecurityConfigurations {
         // Conta do próprio usuário
         req.requestMatchers("/me/**").authenticated();
 
-        // Funcionários e relatórios: apenas gestão
+        // Professores acompanham o desempenho acadêmico dos alunos
+        req
+          .requestMatchers(
+            HttpMethod.GET,
+            "/relatorios/desempenho-alunos"
+          )
+          .hasAnyRole("PROFESSOR", "GESTOR", "SUPERVISOR", "ADMIN");
+
+        // Funcionários e demais relatórios: apenas gestão
         req
           .requestMatchers("/relatorios/**")
           .hasAnyRole("GESTOR", "SUPERVISOR", "ADMIN");
