@@ -323,7 +323,49 @@ class AgendamentoControllerTest {
 
     verify(agendamentoService).listar(
       any(Pageable.class),
-      eq(StatusAgendamento.CONCLUIDO)
+      eq(
+        new FiltroAgendamentoDTO(
+          StatusAgendamento.CONCLUIDO,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        )
+      )
+    );
+  }
+
+  @Test
+  @DisplayName("Deveria aceitar os filtros operacionais combinados")
+  @WithMockUser(roles = "FUNCIONARIO")
+  void cenarioFiltrarAgendamentosComFiltrosCombinados() throws Exception {
+    mvc
+      .perform(
+        get("/agendamentos")
+          .param("inicio", "2026-10-01")
+          .param("fim", "2026-10-31")
+          .param("idCurso", "1")
+          .param("idAluno", "2")
+          .param("idCliente", "3")
+          .param("idUnidade", "4")
+      )
+      .andExpect(status().isOk());
+
+    verify(agendamentoService).listar(
+      any(Pageable.class),
+      eq(
+        new FiltroAgendamentoDTO(
+          null,
+          LocalDate.of(2026, 10, 1),
+          LocalDate.of(2026, 10, 31),
+          1L,
+          2L,
+          3L,
+          4L
+        )
+      )
     );
   }
 

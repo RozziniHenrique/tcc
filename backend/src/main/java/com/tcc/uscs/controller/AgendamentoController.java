@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -41,14 +42,34 @@ public class AgendamentoController {
   @GetMapping
   @Operation(summary = "Lista agendamentos")
   public ResponseEntity<Page<ListarAgendamentoDTO>> listar(
-    @PageableDefault(
+    @ParameterObject @PageableDefault(
       size = 10,
       sort = "dataHora",
       direction = Sort.Direction.DESC
     ) Pageable paginacao,
-    @RequestParam(required = false) StatusAgendamento status
+    @RequestParam(required = false) StatusAgendamento status,
+    @RequestParam(required = false) @DateTimeFormat(
+      iso = DateTimeFormat.ISO.DATE
+    ) LocalDate inicio,
+    @RequestParam(required = false) @DateTimeFormat(
+      iso = DateTimeFormat.ISO.DATE
+    ) LocalDate fim,
+    @RequestParam(required = false) Long idCurso,
+    @RequestParam(required = false) Long idAluno,
+    @RequestParam(required = false) Long idCliente,
+    @RequestParam(required = false) Long idUnidade
   ) {
-    return ResponseEntity.ok(service.listar(paginacao, status));
+    var filtros = new FiltroAgendamentoDTO(
+      status,
+      inicio,
+      fim,
+      idCurso,
+      idAluno,
+      idCliente,
+      idUnidade
+    );
+
+    return ResponseEntity.ok(service.listar(paginacao, filtros));
   }
 
   @GetMapping("/disponibilidade")
