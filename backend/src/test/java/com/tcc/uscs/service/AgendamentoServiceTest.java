@@ -11,6 +11,7 @@ import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.agendamento.dto.AtualizarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
+import com.tcc.uscs.model.agendamento.dto.FiltroAgendamentoDTO;
 import com.tcc.uscs.model.aluno.Aluno;
 import com.tcc.uscs.model.cliente.Cliente;
 import com.tcc.uscs.model.curso.Curso;
@@ -685,29 +686,72 @@ class AgendamentoServiceTest {
 
     var paginacao = Pageable.unpaged();
 
-    when(repository.findAllVinculadosAoUsuario(1L, null, paginacao)).thenReturn(
-      Page.empty(paginacao)
-    );
+    var filtros = FiltroAgendamentoDTO.vazio();
 
-    var resultado = agendamentoService.listar(paginacao, null);
+    when(
+      repository.buscarComFiltros(
+        1L,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        paginacao
+      )
+    ).thenReturn(Page.empty(paginacao));
+
+    var resultado = agendamentoService.listar(paginacao, filtros);
 
     assertTrue(resultado.isEmpty());
-    verify(repository).findAllVinculadosAoUsuario(1L, null, paginacao);
-    verify(repository, never()).findAll(paginacao);
+    verify(repository).buscarComFiltros(
+      1L,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      paginacao
+    );
   }
 
   @Test
   @DisplayName("Deveria permitir que funcionário liste todos os agendamentos")
   void cenarioListarTodosParaFuncionario() {
     var paginacao = Pageable.unpaged();
+    var filtros = FiltroAgendamentoDTO.vazio();
 
-    when(repository.findAll(paginacao)).thenReturn(Page.empty(paginacao));
+    when(
+      repository.buscarComFiltros(
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        paginacao
+      )
+    ).thenReturn(Page.empty(paginacao));
 
-    var resultado = agendamentoService.listar(paginacao, null);
+    var resultado = agendamentoService.listar(paginacao, filtros);
 
     assertTrue(resultado.isEmpty());
-    verify(repository).findAll(paginacao);
-    verify(repository, never()).findAllVinculadosAoUsuario(any(), any(), any());
+    verify(repository).buscarComFiltros(
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      paginacao
+    );
   }
 
   @Test
@@ -716,7 +760,10 @@ class AgendamentoServiceTest {
     doReturn(List.of()).when(usuarioLogado).getAuthorities();
 
     assertThrows(AccessDeniedException.class, () ->
-      agendamentoService.listar(Pageable.unpaged(), null)
+      agendamentoService.listar(
+        Pageable.unpaged(),
+        FiltroAgendamentoDTO.vazio()
+      )
     );
 
     verifyNoInteractions(repository);
@@ -726,19 +773,44 @@ class AgendamentoServiceTest {
   @DisplayName("Deveria filtrar agendamentos por status para funcionário")
   void cenarioFiltrarPorStatusParaFuncionario() {
     var paginacao = Pageable.unpaged();
-
-    when(
-      repository.findAllByStatus(StatusAgendamento.CONCLUIDO, paginacao)
-    ).thenReturn(Page.empty(paginacao));
-
-    var resultado = agendamentoService.listar(
-      paginacao,
-      StatusAgendamento.CONCLUIDO
+    var filtros = new FiltroAgendamentoDTO(
+      StatusAgendamento.CONCLUIDO,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
     );
 
+    when(
+      repository.buscarComFiltros(
+        null,
+        StatusAgendamento.CONCLUIDO,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        paginacao
+      )
+    ).thenReturn(Page.empty(paginacao));
+
+    var resultado = agendamentoService.listar(paginacao, filtros);
+
     assertTrue(resultado.isEmpty());
-    verify(repository).findAllByStatus(StatusAgendamento.CONCLUIDO, paginacao);
-    verify(repository, never()).findAll(paginacao);
+    verify(repository).buscarComFiltros(
+      null,
+      StatusAgendamento.CONCLUIDO,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      paginacao
+    );
   }
 
   @Test
@@ -749,26 +821,68 @@ class AgendamentoServiceTest {
       .getAuthorities();
 
     var paginacao = Pageable.unpaged();
+    var filtros = new FiltroAgendamentoDTO(
+      StatusAgendamento.AGENDADO,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    );
 
     when(
-      repository.findAllVinculadosAoUsuario(
+      repository.buscarComFiltros(
         1L,
         StatusAgendamento.AGENDADO,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         paginacao
       )
     ).thenReturn(Page.empty(paginacao));
 
-    var resultado = agendamentoService.listar(
-      paginacao,
-      StatusAgendamento.AGENDADO
-    );
+    var resultado = agendamentoService.listar(paginacao, filtros);
 
     assertTrue(resultado.isEmpty());
-    verify(repository).findAllVinculadosAoUsuario(
+    verify(repository).buscarComFiltros(
       1L,
       StatusAgendamento.AGENDADO,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
       paginacao
     );
+  }
+
+  @Test
+  @DisplayName("Deveria recusar período de filtro invertido")
+  void cenarioFiltrarComPeriodoInvertido() {
+    var filtros = new FiltroAgendamentoDTO(
+      null,
+      LocalDate.of(2026, 10, 31),
+      LocalDate.of(2026, 10, 1),
+      null,
+      null,
+      null,
+      null
+    );
+
+    var erro = assertThrows(ValidacaoException.class, () ->
+      agendamentoService.listar(Pageable.unpaged(), filtros)
+    );
+
+    assertEquals(
+      "A data inicial não pode ser posterior à data final.",
+      erro.getMessage()
+    );
+    verifyNoInteractions(repository);
   }
 
   @Test

@@ -7,6 +7,7 @@ import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.agendamento.dto.AtualizarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.DetalharAgendamentoDTO;
+import com.tcc.uscs.model.agendamento.dto.FiltroAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.HorarioDisponivelDTO;
 import com.tcc.uscs.model.agendamento.dto.ListarAgendamentoDTO;
 import com.tcc.uscs.model.servico.Servico;
@@ -40,23 +41,20 @@ public class AgendamentoService {
   @Transactional(readOnly = true)
   public Page<ListarAgendamentoDTO> listar(
     Pageable paginacao,
-    StatusAgendamento status
+    FiltroAgendamentoDTO filtrosRecebidos
   ) {
     var usuario = getUsuarioAutenticado();
+    var filtros =
+      filtrosRecebidos == null
+        ? FiltroAgendamentoDTO.vazio()
+        : filtrosRecebidos;
+
+    validarFiltrosDeListagem(filtros);
 
     boolean isFuncionario = usuario
       .getAuthorities()
       .stream()
       .anyMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO"));
-
-    if (isFuncionario) {
-      var pagina =
-        status == null
-          ? repository.findAll(paginacao)
-          : repository.findAllByStatus(status, paginacao);
-
-      return pagina.map(ListarAgendamentoDTO::new);
-    }
 
     boolean possuiPerfilClienteOuAluno = usuario
       .getAuthorities()
@@ -67,15 +65,56 @@ public class AgendamentoService {
           a.getAuthority().equals("ROLE_ALUNO")
       );
 
-    if (possuiPerfilClienteOuAluno) {
-      return repository
-        .findAllVinculadosAoUsuario(usuario.getId(), status, paginacao)
-        .map(ListarAgendamentoDTO::new);
+    if (!isFuncionario && !possuiPerfilClienteOuAluno) {
+      throw new AccessDeniedException(
+        "Usuário sem perfil autorizado para consultar agendamentos."
+      );
     }
 
-    throw new AccessDeniedException(
-      "Usuário sem perfil autorizado para consultar agendamentos."
-    );
+    Long idUsuario = isFuncionario ? null : usuario.getId();
+    LocalDateTime inicio =
+      filtros.inicio() == null ? null : filtros.inicio().atStartOfDay();
+    LocalDateTime fim =
+      filtros.fim() == null ? null : filtros.fim().atTime(23, 59, 59, 999999999);
+
+    return repository
+      .buscarComFiltros(
+        idUsuario,
+        filtros.status(),
+        inicio,
+        fim,
+        filtros.idCurso(),
+        filtros.idAluno(),
+        filtros.idCliente(),
+        filtros.idUnidade(),
+        paginacao
+      )
+      .map(ListarAgendamentoDTO::new);
+  }
+
+  private void validarFiltrosDeListagem(FiltroAgendamentoDTO filtros) {
+    if (
+      filtros.inicio() != null &&
+      filtros.fim() != null &&
+      filtros.inicio().isAfter(filtros.fim())
+    ) {
+      throw new ValidacaoException(
+        "A data inicial não pode ser posterior à data final."
+      );
+    }
+
+    validarIdentificadorPositivo(filtros.idCurso(), "curso");
+    validarIdentificadorPositivo(filtros.idAluno(), "aluno");
+    validarIdentificadorPositivo(filtros.idCliente(), "cliente");
+    validarIdentificadorPositivo(filtros.idUnidade(), "unidade");
+  }
+
+  private void validarIdentificadorPositivo(Long id, String nome) {
+    if (id != null && id <= 0) {
+      throw new ValidacaoException(
+        "O identificador de " + nome + " deve ser positivo."
+      );
+    }
   }
 
   @Transactional(readOnly = true)

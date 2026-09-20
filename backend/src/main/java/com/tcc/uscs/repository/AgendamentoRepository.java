@@ -144,18 +144,27 @@ public interface AgendamentoRepository
     """
       SELECT a
       FROM Agendamento a
-      WHERE (a.cliente.id = :idUsuario OR a.aluno.id = :idUsuario)
+      WHERE (:idUsuario IS NULL
+        OR a.cliente.id = :idUsuario
+        OR a.aluno.id = :idUsuario)
         AND (:status IS NULL OR a.status = :status)
+        AND (:inicio IS NULL OR a.dataHora >= :inicio)
+        AND (:fim IS NULL OR a.dataHora <= :fim)
+        AND (:idCurso IS NULL OR a.curso.id = :idCurso)
+        AND (:idAluno IS NULL OR a.aluno.id = :idAluno)
+        AND (:idCliente IS NULL OR a.cliente.id = :idCliente)
+        AND (:idUnidade IS NULL OR a.unidade.id = :idUnidade)
     """
   )
-  Page<Agendamento> findAllVinculadosAoUsuario(
+  Page<Agendamento> buscarComFiltros(
     @Param("idUsuario") Long idUsuario,
     @Param("status") StatusAgendamento status,
-    Pageable paginacao
-  );
-
-  Page<Agendamento> findAllByStatus(
-    StatusAgendamento status,
+    @Param("inicio") LocalDateTime inicio,
+    @Param("fim") LocalDateTime fim,
+    @Param("idCurso") Long idCurso,
+    @Param("idAluno") Long idAluno,
+    @Param("idCliente") Long idCliente,
+    @Param("idUnidade") Long idUnidade,
     Pageable paginacao
   );
 
