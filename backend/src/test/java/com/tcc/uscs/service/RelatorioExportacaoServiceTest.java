@@ -7,6 +7,7 @@ import com.tcc.uscs.model.relatorio.dto.AgendamentosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.RelatorioCompletoDTO;
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 @ExtendWith(MockitoExtension.class)
 class RelatorioExportacaoServiceTest {
@@ -84,5 +86,61 @@ class RelatorioExportacaoServiceTest {
     );
 
     assertTrue(conteudo.contains("\"'=FORMULA\""));
+  }
+
+  @Test
+  void deveriaGerarArquivoXlsx() throws Exception {
+    var inicio = LocalDate.of(2026, 1, 1);
+    var fim = LocalDate.of(2026, 1, 31);
+
+    var relatorio = new RelatorioCompletoDTO(
+      inicio,
+      fim,
+      new FaturamentoRelatorioDTO(2L, new BigDecimal("300.00")),
+      List.of(new AlunosPorCursoRelatorioDTO(1L, "Estética", 5L)),
+      List.of(
+        new AgendamentosPorCursoRelatorioDTO(
+          1L,
+          "Estética",
+          2L,
+          new BigDecimal("300.00")
+        )
+      )
+    );
+
+    when(relatorioService.gerarRelatorioCompleto(inicio, fim)).thenReturn(
+      relatorio
+    );
+
+    var arquivo = exportacaoService.gerarXlsx(inicio, fim);
+
+    assertTrue(arquivo.length > 0);
+
+    try (
+      var workbook = WorkbookFactory.create(new ByteArrayInputStream(arquivo))
+    ) {
+      assertEquals(3, workbook.getNumberOfSheets());
+      assertEquals("Resumo", workbook.getSheetName(0));
+      assertEquals(
+        "RELATÓRIO STFER",
+        workbook.getSheet("Resumo").getRow(0).getCell(0).getStringCellValue()
+      );
+      assertEquals(
+        "Estética",
+        workbook
+          .getSheet("Alunos por curso")
+          .getRow(1)
+          .getCell(1)
+          .getStringCellValue()
+      );
+      assertEquals(
+        300.0,
+        workbook
+          .getSheet("Agendamentos por curso")
+          .getRow(1)
+          .getCell(3)
+          .getNumericCellValue()
+      );
+    }
   }
 }

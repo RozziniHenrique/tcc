@@ -233,6 +233,34 @@ class RelatorioControllerTest {
 
   @Test
   @WithMockUser(roles = "ADMIN")
+  void deveriaBaixarRelatorioXlsx() throws Exception {
+    var arquivo = new byte[] { 0x50, 0x4B, 0x03, 0x04 };
+
+    when(relatorioExportacaoService.gerarXlsx(inicio, fim)).thenReturn(arquivo);
+
+    mvc
+      .perform(
+        get("/relatorios/exportar/xlsx")
+          .param("inicio", inicio.toString())
+          .param("fim", fim.toString())
+      )
+      .andExpect(status().isOk())
+      .andExpect(
+        content().contentType(
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+      )
+      .andExpect(
+        header().string(
+          HttpHeaders.CONTENT_DISPOSITION,
+          "attachment; filename=\"relatorio-stfer-2026-01-01-2026-01-31.xlsx\""
+        )
+      )
+      .andExpect(content().bytes(arquivo));
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
   void deveriaBaixarRelatorioPdf() throws Exception {
     var arquivo = "%PDF-arquivo".getBytes(StandardCharsets.UTF_8);
 
