@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.tcc.uscs.model.agendamento.Agendamento;
 import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.aluno.Aluno;
+import com.tcc.uscs.model.avaliacao.Avaliacao;
 import com.tcc.uscs.model.cliente.Cliente;
 import com.tcc.uscs.model.curso.Curso;
 import com.tcc.uscs.model.unidade.Unidade;
@@ -77,10 +78,13 @@ class RelatorioRepositoryTest {
     unidade.setAtivo(true);
     entityManager.persist(unidade);
 
-    criarAgendamento(
+    var agendamentoConcluido = criarAgendamento(
       LocalDateTime.of(2026, 1, 10, 10, 0),
       new BigDecimal("100.00"),
       StatusAgendamento.CONCLUIDO
+    );
+    entityManager.persist(
+      new Avaliacao(agendamentoConcluido, 5, "Excelente atendimento")
     );
 
     criarAgendamento(
@@ -144,6 +148,30 @@ class RelatorioRepositoryTest {
     assertEquals(1L, resultado.getFirst().quantidadeAlunos());
   }
 
+  @Test
+  void deveriaCalcularDesempenhoDoAlunoNoPeriodo() {
+    var inicio = LocalDateTime.of(2026, 1, 1, 0, 0);
+    var fim = LocalDateTime.of(2026, 1, 31, 23, 59, 59);
+
+    var resultado = agendamentoRepository.calcularDesempenhoAlunos(
+      inicio,
+      fim,
+      curso.getId(),
+      aluno.getId()
+    );
+
+    assertEquals(1, resultado.size());
+
+    var desempenho = resultado.getFirst();
+    assertEquals(aluno.getId(), desempenho.idAluno());
+    assertEquals(curso.getId(), desempenho.idCurso());
+    assertEquals(3L, desempenho.totalAgendamentos());
+    assertEquals(1L, desempenho.totalConcluidos());
+    assertEquals(1L, desempenho.totalCancelados());
+    assertEquals(5.0, desempenho.mediaAvaliacoes());
+    assertEquals(1L, desempenho.quantidadeAvaliacoes());
+  }
+
   private Usuario criarUsuario(String cpf, String email, boolean ativo) {
     var usuario = new Usuario();
     usuario.setNome("Usuário Teste");
@@ -156,7 +184,7 @@ class RelatorioRepositoryTest {
     return entityManager.persist(usuario);
   }
 
-  private void criarAgendamento(
+  private Agendamento criarAgendamento(
     LocalDateTime data,
     BigDecimal valor,
     StatusAgendamento status
@@ -168,5 +196,6 @@ class RelatorioRepositoryTest {
     agendamento.setAtivo(status != StatusAgendamento.CANCELADO);
 
     entityManager.persist(agendamento);
+    return agendamento;
   }
 }

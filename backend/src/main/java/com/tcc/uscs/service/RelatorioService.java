@@ -3,6 +3,7 @@ package com.tcc.uscs.service;
 import com.tcc.uscs.infra.exception.ValidacaoException;
 import com.tcc.uscs.model.relatorio.dto.AgendamentosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
+import com.tcc.uscs.model.relatorio.dto.DesempenhoAlunoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.RelatorioCompletoDTO;
 import com.tcc.uscs.repository.AgendamentoRepository;
@@ -86,6 +87,33 @@ public class RelatorioService {
       inicio.atStartOfDay(),
       fim.atTime(LocalTime.MAX)
     );
+  }
+
+  @Transactional(readOnly = true)
+  public List<DesempenhoAlunoRelatorioDTO> gerarDesempenhoAlunos(
+    LocalDate inicio,
+    LocalDate fim,
+    Long idCurso,
+    Long idAluno
+  ) {
+    validarPeriodo(inicio, fim);
+    validarFiltroPositivo(idCurso, "curso");
+    validarFiltroPositivo(idAluno, "aluno");
+
+    return agendamentoRepository.calcularDesempenhoAlunos(
+      inicio.atStartOfDay(),
+      fim.atTime(LocalTime.MAX),
+      idCurso,
+      idAluno
+    );
+  }
+
+  private void validarFiltroPositivo(Long id, String nomeFiltro) {
+    if (id != null && id <= 0) {
+      throw new ValidacaoException(
+        "O identificador de " + nomeFiltro + " deve ser positivo."
+      );
+    }
   }
 
   private void validarPeriodo(LocalDate inicio, LocalDate fim) {

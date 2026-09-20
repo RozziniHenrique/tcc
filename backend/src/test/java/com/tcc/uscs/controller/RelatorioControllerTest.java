@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.tcc.uscs.model.relatorio.dto.AgendamentosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
+import com.tcc.uscs.model.relatorio.dto.DesempenhoAlunoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.RelatorioCompletoDTO;
 import com.tcc.uscs.service.RelatorioExportacaoService;
@@ -152,6 +153,52 @@ class RelatorioControllerTest {
           .param("fim", fim.toString())
       )
       .andExpect(status().isOk());
+  }
+
+  @Test
+  @WithMockUser(roles = "PROFESSOR")
+  void deveriaPermitirProfessorConsultarDesempenhoDosAlunos()
+    throws Exception {
+    when(
+      relatorioService.gerarDesempenhoAlunos(inicio, fim, 2L, null)
+    ).thenReturn(
+      List.of(
+        new DesempenhoAlunoRelatorioDTO(
+          1L,
+          "Aluno Teste",
+          2L,
+          "Estética",
+          8L,
+          6L,
+          1L,
+          4.5,
+          6L
+        )
+      )
+    );
+
+    mvc
+      .perform(
+        get("/relatorios/desempenho-alunos")
+          .param("inicio", inicio.toString())
+          .param("fim", fim.toString())
+          .param("idCurso", "2")
+      )
+      .andExpect(status().isOk());
+
+    verify(relatorioService).gerarDesempenhoAlunos(inicio, fim, 2L, null);
+  }
+
+  @Test
+  @WithMockUser(roles = "ATENDENTE")
+  void deveriaNegarDesempenhoDosAlunosParaAtendente() throws Exception {
+    mvc
+      .perform(
+        get("/relatorios/desempenho-alunos")
+          .param("inicio", inicio.toString())
+          .param("fim", fim.toString())
+      )
+      .andExpect(status().isForbidden());
   }
 
   @Test

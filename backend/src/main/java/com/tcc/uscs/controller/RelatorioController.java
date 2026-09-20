@@ -2,6 +2,7 @@ package com.tcc.uscs.controller;
 
 import com.tcc.uscs.model.relatorio.dto.AgendamentosPorCursoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.AlunosPorCursoRelatorioDTO;
+import com.tcc.uscs.model.relatorio.dto.DesempenhoAlunoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.FaturamentoRelatorioDTO;
 import com.tcc.uscs.model.relatorio.dto.RelatorioCompletoDTO;
 import com.tcc.uscs.service.RelatorioExportacaoService;
@@ -65,6 +66,25 @@ public class RelatorioController {
   ) {
     return ResponseEntity.ok(
       relatorioService.gerarRelatorioAgendamentosPorCurso(inicio, fim)
+    );
+  }
+
+  @GetMapping("/desempenho-alunos")
+  public ResponseEntity<List<DesempenhoAlunoRelatorioDTO>> desempenhoAlunos(
+    @RequestParam @DateTimeFormat(
+      iso = DateTimeFormat.ISO.DATE
+    ) LocalDate inicio,
+    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
+    @RequestParam(required = false) Long idCurso,
+    @RequestParam(required = false) Long idAluno
+  ) {
+    return ResponseEntity.ok(
+      relatorioService.gerarDesempenhoAlunos(
+        inicio,
+        fim,
+        idCurso,
+        idAluno
+      )
     );
   }
 
