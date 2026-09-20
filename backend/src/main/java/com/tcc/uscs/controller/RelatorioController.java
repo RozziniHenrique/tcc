@@ -108,6 +108,32 @@ public class RelatorioController {
   }
 
   @GetMapping(
+    value = "/exportar/xlsx",
+    produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  )
+  public ResponseEntity<byte[]> exportarXlsx(
+    @RequestParam @DateTimeFormat(
+      iso = DateTimeFormat.ISO.DATE
+    ) LocalDate inicio,
+    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim
+  ) {
+    var arquivo = relatorioExportacaoService.gerarXlsx(inicio, fim);
+    var nomeArquivo = "relatorio-stfer-" + inicio + "-" + fim + ".xlsx";
+
+    return ResponseEntity.ok()
+      .header(
+        HttpHeaders.CONTENT_DISPOSITION,
+        "attachment; filename=\"" + nomeArquivo + "\""
+      )
+      .contentType(
+        MediaType.parseMediaType(
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+      )
+      .body(arquivo);
+  }
+
+  @GetMapping(
     value = "/exportar/pdf",
     produces = MediaType.APPLICATION_PDF_VALUE
   )
