@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../permissions/access_policy.dart';
+import '../platform/app_platform.dart';
 import '../../features/auth/data/models/authenticated_user.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 import '../../features/auth/presentation/pages/client_registration_page.dart';
@@ -13,6 +15,7 @@ import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/evaluations/presentation/pages/evaluations_page.dart';
 import '../../features/management/presentation/pages/people_page.dart';
+
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../widgets/app_shell.dart';
 
@@ -35,18 +38,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       final user = authState.value;
+      final publicRoute =
+          location == '/login' ||
+          location == '/recuperar-senha' ||
+          location == '/cadastro';
 
       if (user == null) {
-        final publicRoute =
-            location == '/login' ||
-            location == '/recuperar-senha' ||
-            location == '/cadastro';
         return publicRoute ? null : '/login';
+      }
+
+      final platform = AppPlatformInfo.current;
+
+      if (!AccessPolicy.canUsePlatform(user, platform)) {
+        return location == '/plataforma-indisponivel'
+            ? null
+            : '/plataforma-indisponivel';
       }
 
       final initialRoute = _initialRouteFor(user);
 
-      if (location == '/login' || location == '/splash') {
+      if (publicRoute ||
+          location == '/splash' ||
+          location == '/plataforma-indisponivel') {
         return initialRoute;
       }
 
@@ -70,6 +83,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/recuperar-senha',
         builder: (context, state) => const PasswordRecoveryPage(),
+      ),
+      GoRoute(
+        path: '/plataforma-indisponivel',
+        builder: (context, state) => const _UnsupportedPlatformPage(),
       ),
       ShellRoute(
         builder: (context, state, child) => AppShell(child: child),
@@ -137,30 +154,99 @@ class RouterRefreshNotifier extends ChangeNotifier {
 }
 
 String _initialRouteFor(AuthenticatedUser user) {
-  if (_isManagement(user)) {
+  final platform = AppPlatformInfo.current;
+
+  if (AccessPolicy.allows(user, platform, AppCapability.viewDashboard)) {
     return '/dashboard';
   }
-  return '/agendamentos';
+
+  if (AccessPolicy.allows(user, platform, AppCapability.viewAllAppointments) ||
+      AccessPolicy.allows(user, platform, AppCapability.viewOwnAppointments)) {
+    return '/agendamentos';
+  }
+
+  return '/catalogo';
 }
 
 bool _canAccess(AuthenticatedUser user, String location) {
-  if (location.startsWith('/dashboard') || location.startsWith('/pessoas')) {
-    return _isManagement(user);
+  final platform = AppPlatformInfo.current;
+
+  bool allows(AppCapability capability) {
+    return AccessPolicy.allows(user, platform, capability);
   }
 
-  if (location.startsWith('/novo-agendamento') ||
-      location.startsWith('/avaliacoes')) {
-    return user.hasProfile(UserProfile.client);
+  if (location.startsWith('/dashboard')) {
+    return allows(AppCapability.viewDashboard);
+  }
+
+  if (location.startsWith('/pessoas')) {
+    return allows(AppCapability.viewClients) ||
+        allows(AppCapability.viewStudents) ||
+        allows(AppCapability.viewEmployees);
+  }
+
+  if (location.startsWith('/novo-agendamento')) {
+    return allows(AppCapability.createOwnAppointment);
+  }
+
+  if (location.startsWith('/avaliacoes')) {
+    return allows(AppCapability.evaluateAppointments);
+  }
+
+  if (location.startsWith('/agendamentos')) {
+    return allows(AppCapability.viewAllAppointments) ||
+        allows(AppCapability.viewOwnAppointments);
+  }
+
+  if (location.startsWith('/catalogo')) {
+    return allows(AppCapability.viewCatalog);
+  }
+
+  if (location.startsWith('/perfil')) {
+    return allows(AppCapability.editProfile);
   }
 
   return true;
 }
 
-bool _isManagement(AuthenticatedUser user) {
-  return switch (user.employeeRole) {
-    EmployeeRole.manager ||
-    EmployeeRole.supervisor ||
-    EmployeeRole.admin => true,
-    _ => false,
-  };
+class _UnsupportedPlatformPage extends ConsumerWidget {
+  const _UnsupportedPlatformPage();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.phone_android, size: 64),
+                const SizedBox(height: 24),
+                Text(
+                  'Acesso disponível pelo aplicativo',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Este perfil utiliza o aplicativo mobile do STFER.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () {
+                    ref.read(authControllerProvider.notifier).logout();
+                  },
+                  child: const Text('Sair'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
