@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../permissions/access_policy.dart';
+import '../platform/app_platform.dart';
 import '../../features/auth/data/models/authenticated_user.dart';
 import '../../features/auth/presentation/controllers/auth_controller.dart';
 
@@ -122,59 +124,65 @@ String _initial(String name) {
 }
 
 List<_Destination> _destinations(AuthenticatedUser user) {
-  final management = {
-    EmployeeRole.manager,
-    EmployeeRole.supervisor,
-    EmployeeRole.admin,
-  }.contains(user.employeeRole);
+  final platform = AppPlatformInfo.current;
+
+  bool allows(AppCapability capability) {
+    return AccessPolicy.allows(user, platform, capability);
+  }
 
   return [
-    if (management)
+    if (allows(AppCapability.viewDashboard))
       const _Destination(
         '/dashboard',
         'Dashboard',
         Icons.dashboard_outlined,
         Icons.dashboard,
       ),
-    const _Destination(
-      '/agendamentos',
-      'Agendamentos',
-      Icons.calendar_month_outlined,
-      Icons.calendar_month,
-    ),
-    if (user.hasProfile(UserProfile.client))
+    if (allows(AppCapability.viewAllAppointments) ||
+        allows(AppCapability.viewOwnAppointments))
+      const _Destination(
+        '/agendamentos',
+        'Agendamentos',
+        Icons.calendar_month_outlined,
+        Icons.calendar_month,
+      ),
+    if (allows(AppCapability.createOwnAppointment))
       const _Destination(
         '/novo-agendamento',
         'Novo agendamento',
         Icons.add_circle_outline,
         Icons.add_circle,
       ),
-    if (user.hasProfile(UserProfile.client))
+    if (allows(AppCapability.evaluateAppointments))
       const _Destination(
         '/avaliacoes',
         'Avaliações',
         Icons.star_outline,
         Icons.star,
       ),
-    const _Destination(
-      '/catalogo',
-      'Cursos e serviços',
-      Icons.menu_book_outlined,
-      Icons.menu_book,
-    ),
-    if (management)
+    if (allows(AppCapability.viewCatalog))
+      const _Destination(
+        '/catalogo',
+        'Cursos e serviços',
+        Icons.menu_book_outlined,
+        Icons.menu_book,
+      ),
+    if (allows(AppCapability.viewClients) ||
+        allows(AppCapability.viewStudents) ||
+        allows(AppCapability.viewEmployees))
       const _Destination(
         '/pessoas',
         'Pessoas',
         Icons.groups_outlined,
         Icons.groups,
       ),
-    const _Destination(
-      '/perfil',
-      'Meu perfil',
-      Icons.person_outline,
-      Icons.person,
-    ),
+    if (allows(AppCapability.editProfile))
+      const _Destination(
+        '/perfil',
+        'Meu perfil',
+        Icons.person_outline,
+        Icons.person,
+      ),
   ];
 }
 
