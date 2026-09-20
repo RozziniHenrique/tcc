@@ -56,6 +56,14 @@ public class AlunoService {
   }
 
   @Transactional(readOnly = true)
+  public long contarAlunosDisponiveis(
+    Long idCurso,
+    LocalDateTime dataHora
+  ) {
+    return repository.contarDisponiveisPorCursoEHorario(idCurso, dataHora);
+  }
+
+  @Transactional(readOnly = true)
   public Aluno obterEntidadePorId(Long id) {
     return repository
       .findByIdAndAtivoTrueAndUsuarioAtivoTrue(id)

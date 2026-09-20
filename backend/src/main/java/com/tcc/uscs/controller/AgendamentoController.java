@@ -5,11 +5,14 @@ import com.tcc.uscs.model.agendamento.dto.*;
 import com.tcc.uscs.service.AgendamentoService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -46,6 +49,15 @@ public class AgendamentoController {
     @RequestParam(required = false) StatusAgendamento status
   ) {
     return ResponseEntity.ok(service.listar(paginacao, status));
+  }
+
+  @GetMapping("/disponibilidade")
+  @Operation(summary = "Consulta horários disponíveis para um curso e data")
+  public ResponseEntity<List<HorarioDisponivelDTO>> consultarDisponibilidade(
+    @RequestParam Long idCurso,
+    @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
+  ) {
+    return ResponseEntity.ok(service.consultarDisponibilidade(idCurso, data));
   }
 
   @GetMapping("/{id}")

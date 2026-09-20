@@ -9,12 +9,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.agendamento.dto.*;
 import com.tcc.uscs.service.AgendamentoService;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -151,6 +153,41 @@ class AgendamentoControllerTest {
     );
 
     mvc.perform(get("/agendamentos")).andExpect(status().isOk());
+  }
+
+  @Test
+  @DisplayName("Deveria consultar horários disponíveis")
+  @WithMockUser(roles = "CLIENTE")
+  void cenarioConsultarDisponibilidade() throws Exception {
+    var data = LocalDate.of(2026, 10, 5);
+
+    when(agendamentoService.consultarDisponibilidade(1L, data)).thenReturn(
+      List.of(new HorarioDisponivelDTO(data.atTime(9, 0), 2L))
+    );
+
+    mvc
+      .perform(
+        get("/agendamentos/disponibilidade")
+          .param("idCurso", "1")
+          .param("data", data.toString())
+      )
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$[0].dataHora").value("2026-10-05T09:00:00"))
+      .andExpect(jsonPath("$[0].quantidadeAlunosDisponiveis").value(2));
+
+    verify(agendamentoService).consultarDisponibilidade(1L, data);
+  }
+
+  @Test
+  @DisplayName("Deveria negar consulta de disponibilidade sem autenticação")
+  void cenarioConsultarDisponibilidadeSemAutenticacao() throws Exception {
+    mvc
+      .perform(
+        get("/agendamentos/disponibilidade")
+          .param("idCurso", "1")
+          .param("data", "2026-10-05")
+      )
+      .andExpect(status().isUnauthorized());
   }
 
   @Test
