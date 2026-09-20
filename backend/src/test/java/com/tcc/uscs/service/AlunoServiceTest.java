@@ -127,6 +127,20 @@ class AlunoServiceTest {
   }
 
   @Test
+  @DisplayName("Deveria contar alunos disponíveis para o curso e horário")
+  void cenarioContarAlunosDisponiveis() {
+    var dataHora = LocalDateTime.of(2026, 10, 1, 14, 0);
+
+    when(
+      repository.contarDisponiveisPorCursoEHorario(1L, dataHora)
+    ).thenReturn(3L);
+
+    var quantidade = alunoService.contarAlunosDisponiveis(1L, dataHora);
+
+    assertEquals(3L, quantidade);
+  }
+
+  @Test
   @DisplayName("Deveria cadastrar aluno com sucesso via Stored Procedure")
   void cenarioCadastrarComSucesso() {
     var curso = mock(Curso.class);

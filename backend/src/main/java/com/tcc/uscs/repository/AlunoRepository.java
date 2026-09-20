@@ -36,4 +36,26 @@ public interface AlunoRepository extends JpaRepository<Aluno, Long> {
     @Param("idCurso") Long idCurso,
     @Param("dataHora") LocalDateTime dataHora
   );
+
+  @Query(
+    """
+      SELECT COUNT(al)
+      FROM Aluno al
+      JOIN al.usuario u
+      WHERE al.curso.id = :idCurso
+        AND al.ativo = true
+        AND u.ativo = true
+        AND NOT EXISTS (
+          SELECT a.id
+          FROM Agendamento a
+          WHERE a.aluno = al
+            AND a.dataHora = :dataHora
+            AND a.ativo = true
+        )
+    """
+  )
+  long contarDisponiveisPorCursoEHorario(
+    @Param("idCurso") Long idCurso,
+    @Param("dataHora") LocalDateTime dataHora
+  );
 }

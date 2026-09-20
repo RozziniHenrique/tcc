@@ -7,6 +7,7 @@ import com.tcc.uscs.model.agendamento.StatusAgendamento;
 import com.tcc.uscs.model.agendamento.dto.AtualizarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.CadastrarAgendamentoDTO;
 import com.tcc.uscs.model.agendamento.dto.DetalharAgendamentoDTO;
+import com.tcc.uscs.model.agendamento.dto.HorarioDisponivelDTO;
 import com.tcc.uscs.model.agendamento.dto.ListarAgendamentoDTO;
 import com.tcc.uscs.model.servico.Servico;
 import com.tcc.uscs.model.usuario.Usuario;
@@ -14,6 +15,7 @@ import com.tcc.uscs.repository.*;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -81,6 +83,68 @@ public class AgendamentoService {
     var agendamento = obterAgendamento(id);
     validarPosseDoAgendamento(agendamento);
     return new DetalharAgendamentoDTO(agendamento);
+  }
+
+  @Transactional(readOnly = true)
+  public List<HorarioDisponivelDTO> consultarDisponibilidade(
+    Long idCurso,
+    LocalDate data
+  ) {
+    if (idCurso == null || idCurso <= 0) {
+      throw new ValidacaoException(
+        "O identificador do curso deve ser positivo."
+      );
+    }
+
+    if (data == null) {
+      throw new ValidacaoException("A data é obrigatória.");
+    }
+
+    var agora = LocalDateTime.now();
+    if (data.isBefore(agora.toLocalDate())) {
+      throw new ValidacaoException(
+        "A disponibilidade não pode ser consultada para uma data passada."
+      );
+    }
+
+    cursoRepository
+      .findByIdAndAtivoTrue(idCurso)
+      .orElseThrow(() ->
+        new RecursoNaoEncontradoException("Curso não encontrado ou inativo!")
+      );
+
+    if (data.getDayOfWeek() == DayOfWeek.SUNDAY) {
+      return List.of();
+    }
+
+    var usuario = getUsuarioAutenticado();
+    var authorities = usuario.getAuthorities();
+    boolean clienteSemPerfilFuncionario =
+      authorities
+        .stream()
+        .anyMatch(a -> a.getAuthority().equals("ROLE_CLIENTE")) &&
+      authorities
+        .stream()
+        .noneMatch(a -> a.getAuthority().equals("ROLE_FUNCIONARIO"));
+
+    return java.util.stream.IntStream.rangeClosed(8, 18)
+      .mapToObj(hora -> data.atTime(hora, 0))
+      .filter(dataHora -> Duration.between(agora, dataHora).toMinutes() >= 30)
+      .filter(dataHora ->
+        !clienteSemPerfilFuncionario ||
+        !repository.existsByClienteIdAndDataHoraAndAtivoTrue(
+          usuario.getId(),
+          dataHora
+        )
+      )
+      .map(dataHora ->
+        new HorarioDisponivelDTO(
+          dataHora,
+          alunoService.contarAlunosDisponiveis(idCurso, dataHora)
+        )
+      )
+      .filter(horario -> horario.quantidadeAlunosDisponiveis() > 0)
+      .toList();
   }
 
   @Transactional

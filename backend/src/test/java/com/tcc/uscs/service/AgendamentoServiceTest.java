@@ -23,6 +23,7 @@ import com.tcc.uscs.repository.CursoRepository;
 import com.tcc.uscs.repository.UnidadeRepository;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -94,6 +95,41 @@ class AgendamentoServiceTest {
   @AfterEach
   void clearSecurity() {
     SecurityContextHolder.clearContext();
+  }
+
+  @Test
+  @DisplayName("Deveria retornar os horários disponíveis para o curso")
+  void cenarioConsultarDisponibilidadeComSucesso() {
+    var data = LocalDate.now().plusWeeks(1).with(DayOfWeek.MONDAY);
+
+    when(cursoRepository.findByIdAndAtivoTrue(1L)).thenReturn(
+      Optional.of(mock(Curso.class))
+    );
+    when(
+      alunoService.contarAlunosDisponiveis(eq(1L), any(LocalDateTime.class))
+    ).thenReturn(2L);
+
+    var resultado = agendamentoService.consultarDisponibilidade(1L, data);
+
+    assertEquals(11, resultado.size());
+    assertEquals(data.atTime(8, 0), resultado.getFirst().dataHora());
+    assertEquals(data.atTime(18, 0), resultado.getLast().dataHora());
+    assertEquals(2L, resultado.getFirst().quantidadeAlunosDisponiveis());
+  }
+
+  @Test
+  @DisplayName("Deveria retornar lista vazia para domingo")
+  void cenarioConsultarDisponibilidadeNoDomingo() {
+    var domingo = LocalDate.now().plusWeeks(1).with(DayOfWeek.SUNDAY);
+
+    when(cursoRepository.findByIdAndAtivoTrue(1L)).thenReturn(
+      Optional.of(mock(Curso.class))
+    );
+
+    var resultado = agendamentoService.consultarDisponibilidade(1L, domingo);
+
+    assertTrue(resultado.isEmpty());
+    verify(alunoService, never()).contarAlunosDisponiveis(any(), any());
   }
 
   @Test
