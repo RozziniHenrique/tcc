@@ -7,6 +7,7 @@ import '../../../../core/providers/app_providers.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/page_header.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../data/models/appointment.dart';
 
 class NewAppointmentPage extends ConsumerStatefulWidget {
   const NewAppointmentPage({super.key});
@@ -20,14 +21,15 @@ class _NewAppointmentPageState extends ConsumerState<NewAppointmentPage> {
   int? _courseId;
   int? _unitId;
   final Set<int> _serviceIds = {};
-  late DateTime _dateTime;
+  late DateTime _selectedDate;
+  DateTime? _selectedSlot;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     final tomorrow = DateTime.now().add(const Duration(days: 1));
-    _dateTime = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 9);
+    _selectedDate = DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
   }
 
   @override
@@ -67,7 +69,10 @@ class _NewAppointmentPageState extends ConsumerState<NewAppointmentPage> {
                               child: Text(item.name),
                             ),
                         ],
-                        onChanged: (value) => setState(() => _courseId = value),
+                        onChanged: (value) => setState(() {
+                          _courseId = value;
+                          _selectedSlot = null;
+                        }),
                         validator: (value) =>
                             value == null ? 'Selecione um curso.' : null,
                       ),
@@ -131,10 +136,23 @@ class _NewAppointmentPageState extends ConsumerState<NewAppointmentPage> {
                         ),
                       ),
                     const SizedBox(height: 16),
+                    Text(
+                      'Data e horário',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
                     OutlinedButton.icon(
-                      onPressed: _pickDateTime,
-                      icon: const Icon(Icons.schedule),
-                      label: Text(formatDateTime(_dateTime)),
+                      onPressed: _pickDate,
+                      icon: const Icon(Icons.calendar_today_outlined),
+                      label: Text(formatDate(_selectedDate)),
+                    ),
+                    const SizedBox(height: 12),
+                    _AvailabilitySection(
+                      courseId: _courseId,
+                      date: _selectedDate,
+                      selected: _selectedSlot,
+                      onSelected: (value) =>
+                          setState(() => _selectedSlot = value),
                     ),
                     const SizedBox(height: 24),
                     FilledButton(
@@ -156,35 +174,30 @@ class _NewAppointmentPageState extends ConsumerState<NewAppointmentPage> {
     );
   }
 
-  Future<void> _pickDateTime() async {
+  Future<void> _pickDate() async {
     final date = await showDatePicker(
       context: context,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDate: _dateTime,
+      initialDate: _selectedDate,
     );
     if (date == null || !mounted) return;
-
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_dateTime),
-    );
-    if (time == null) return;
-
     setState(() {
-      _dateTime = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
+      _selectedDate = DateTime(date.year, date.month, date.day);
+      _selectedSlot = null;
     });
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate() || _serviceIds.isEmpty) {
+    if (!_formKey.currentState!.validate() ||
+        _serviceIds.isEmpty ||
+        _selectedSlot == null) {
       setState(() {});
+      if (_selectedSlot == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Selecione um horário disponível.')),
+        );
+      }
       return;
     }
     setState(() => _saving = true);
@@ -197,7 +210,7 @@ class _NewAppointmentPageState extends ConsumerState<NewAppointmentPage> {
             courseId: _courseId!,
             unitId: _unitId!,
             serviceIds: _serviceIds.toList(),
-            dateTime: _dateTime,
+            dateTime: _selectedSlot!,
           );
       ref.invalidate(appointmentsProvider);
       if (mounted) context.go('/agendamentos');
@@ -210,5 +223,70 @@ class _NewAppointmentPageState extends ConsumerState<NewAppointmentPage> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+}
+
+class _AvailabilitySection extends ConsumerWidget {
+  const _AvailabilitySection({
+    required this.courseId,
+    required this.date,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final int? courseId;
+  final DateTime date;
+  final DateTime? selected;
+  final ValueChanged<DateTime> onSelected;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (courseId == null) {
+      return const Text('Selecione o curso para consultar os horários.');
+    }
+
+    final query = AvailabilityQuery(courseId: courseId!, date: date);
+    final availability = ref.watch(availabilityProvider(query));
+
+    return availability.when(
+      loading: () => const LinearProgressIndicator(),
+      error: (error, _) => Row(
+        children: [
+          Expanded(child: Text(ApiException.messageFor(error))),
+          IconButton(
+            tooltip: 'Tentar novamente',
+            onPressed: () => ref.invalidate(availabilityProvider(query)),
+            icon: const Icon(Icons.refresh),
+          ),
+        ],
+      ),
+      data: (slots) {
+        if (slots.isEmpty) {
+          return const Text('Não há horários disponíveis nesta data.');
+        }
+
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final slot in slots)
+              ChoiceChip(
+                selected: selected == slot.dateTime,
+                onSelected: (_) => onSelected(slot.dateTime),
+                avatar: const Icon(Icons.schedule, size: 18),
+                label: Text(
+                  '${_time(slot.dateTime)} • '
+                  '${slot.availableStudents} aluno(s)',
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _time(DateTime value) {
+    String two(int number) => number.toString().padLeft(2, '0');
+    return '${two(value.hour)}:${two(value.minute)}';
   }
 }

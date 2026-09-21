@@ -15,6 +15,7 @@ import '../../features/catalog/presentation/pages/catalog_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/evaluations/presentation/pages/evaluations_page.dart';
 import '../../features/management/presentation/pages/people_page.dart';
+import '../../features/performance/presentation/pages/student_performance_page.dart';
 
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../widgets/app_shell.dart';
@@ -100,6 +101,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AppointmentsPage(),
           ),
           GoRoute(
+            path: '/desempenho-alunos',
+            builder: (context, state) => const StudentPerformancePage(),
+          ),
+          GoRoute(
             path: '/novo-agendamento',
             builder: (context, state) => const NewAppointmentPage(),
           ),
@@ -183,6 +188,10 @@ bool _canAccess(AuthenticatedUser user, String location) {
     return allows(AppCapability.viewClients) ||
         allows(AppCapability.viewStudents) ||
         allows(AppCapability.viewEmployees);
+  }
+
+  if (location.startsWith('/desempenho-alunos')) {
+    return allows(AppCapability.viewStudentPerformance);
   }
 
   if (location.startsWith('/novo-agendamento')) {

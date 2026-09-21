@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/download/file_download.dart';
+import '../../../../core/platform/app_platform.dart';
 import '../../../../core/providers/app_providers.dart';
 import '../../../../core/utils/date_periods.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/page_header.dart';
+import '../../data/repositories/dashboard_repository.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -18,6 +21,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   late DateTime _start;
   late DateTime _end;
   _PeriodPreset _preset = _PeriodPreset.monthly;
+  ReportExportFormat? _exporting;
 
   @override
   void initState() {
@@ -36,9 +40,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const PageHeader(
+          PageHeader(
             title: 'Dashboard',
             subtitle: 'Desempenho e faturamento do período selecionado.',
+            action: AppPlatformInfo.current == AppPlatform.web
+                ? _ExportMenu(exporting: _exporting, onSelected: _export)
+                : null,
           ),
           const SizedBox(height: 16),
           _PeriodSelector(
@@ -116,6 +123,34 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     );
   }
 
+  Future<void> _export(ReportExportFormat format) async {
+    setState(() => _exporting = format);
+    try {
+      final bytes = await ref
+          .read(dashboardRepositoryProvider)
+          .export(format, _start, _end);
+      downloadFile(
+        bytes,
+        'relatorio-stfer-${_apiDate(_start)}-${_apiDate(_end)}.'
+        '${format.extension}',
+        format.contentType,
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(ApiException.messageFor(error))));
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = null);
+    }
+  }
+
+  String _apiDate(DateTime value) {
+    String two(int number) => number.toString().padLeft(2, '0');
+    return '${value.year}-${two(value.month)}-${two(value.day)}';
+  }
+
   Future<void> _selectPreset(_PeriodPreset preset) async {
     if (preset == _PeriodPreset.custom) {
       final result = await showDialog<DateTimeRange>(
@@ -147,6 +182,46 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       _start = period.start;
       _end = period.end;
     });
+  }
+}
+
+class _ExportMenu extends StatelessWidget {
+  const _ExportMenu({required this.exporting, required this.onSelected});
+
+  final ReportExportFormat? exporting;
+  final ValueChanged<ReportExportFormat> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (exporting != null) {
+      return const SizedBox.square(
+        dimension: 32,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+
+    return PopupMenuButton<ReportExportFormat>(
+      tooltip: 'Exportar relatório',
+      onSelected: onSelected,
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: ReportExportFormat.csv,
+          child: Text('Exportar CSV'),
+        ),
+        PopupMenuItem(
+          value: ReportExportFormat.pdf,
+          child: Text('Exportar PDF'),
+        ),
+        PopupMenuItem(
+          value: ReportExportFormat.xlsx,
+          child: Text('Exportar Excel'),
+        ),
+      ],
+      child: const Chip(
+        avatar: Icon(Icons.download_outlined, size: 18),
+        label: Text('Exportar'),
+      ),
+    );
   }
 }
 

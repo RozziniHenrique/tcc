@@ -11,13 +11,14 @@ acordo com os perfis retornados pelo endpoint `GET /me`.
 - recuperação e redefinição de senha;
 - cadastro público de cliente;
 - navegação protegida por perfil e função;
-- agenda com filtros, cancelamento e conclusão;
-- criação de agendamento pelo cliente;
+- agenda com filtros operacionais por período, status, curso, unidade e pessoa;
+- criação de agendamento com consulta dos horários realmente disponíveis;
 - avaliações pendentes;
 - consulta de cursos, serviços e unidades;
 - atualização do próprio perfil;
 - gestão de clientes, alunos e funcionários;
-- dashboard gerencial por período;
+- dashboard gerencial por período e exportação em CSV, PDF e Excel;
+- acompanhamento do desempenho dos alunos para professores e gestão;
 - layout responsivo para Android e Web.
 
 ## Arquitetura
@@ -28,6 +29,7 @@ O código está organizado por funcionalidade:
 lib/
 ├── core/
 │   ├── config/
+│   ├── download/
 │   ├── models/
 │   ├── network/
 │   ├── providers/
@@ -43,6 +45,7 @@ lib/
     ├── dashboard/
     ├── evaluations/
     ├── management/
+    ├── performance/
     └── profile/
 ```
 
