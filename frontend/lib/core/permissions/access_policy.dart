@@ -4,6 +4,8 @@ import '../platform/app_platform.dart';
 enum AppCapability {
   viewDashboard,
   viewReports,
+  viewStudentPerformance,
+  exportReports,
   viewAllAppointments,
   manageAppointments,
   viewClients,
@@ -84,6 +86,8 @@ abstract final class AccessPolicy {
       capabilities.addAll({
         AppCapability.viewDashboard,
         AppCapability.viewReports,
+        AppCapability.viewStudentPerformance,
+        AppCapability.exportReports,
         AppCapability.viewAllAppointments,
         AppCapability.manageAppointments,
         AppCapability.viewClients,
@@ -122,6 +126,7 @@ abstract final class AccessPolicy {
         AppCapability.viewStudents,
         AppCapability.editStudents,
         AppCapability.manageCourses,
+        AppCapability.viewStudentPerformance,
       });
     }
 

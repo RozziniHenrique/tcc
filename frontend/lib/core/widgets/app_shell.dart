@@ -146,6 +146,13 @@ List<_Destination> _destinations(AuthenticatedUser user) {
         Icons.calendar_month_outlined,
         Icons.calendar_month,
       ),
+    if (allows(AppCapability.viewStudentPerformance))
+      const _Destination(
+        '/desempenho-alunos',
+        'Desempenho',
+        Icons.insights_outlined,
+        Icons.insights,
+      ),
     if (allows(AppCapability.createOwnAppointment))
       const _Destination(
         '/novo-agendamento',

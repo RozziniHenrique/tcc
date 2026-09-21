@@ -11,6 +11,8 @@ import '../../features/evaluations/data/repositories/evaluation_repository.dart'
 import '../../features/management/data/models/person_summary.dart';
 import '../../features/management/data/repositories/management_repository.dart';
 import '../../features/profile/data/repositories/profile_repository.dart';
+import '../../features/performance/data/models/student_performance.dart';
+import '../../features/performance/data/repositories/performance_repository.dart';
 
 final catalogRepositoryProvider = Provider<CatalogRepository>(
   (ref) => CatalogRepository(ref.watch(apiClientProvider)),
@@ -30,6 +32,9 @@ final managementRepositoryProvider = Provider<ManagementRepository>(
 final profileRepositoryProvider = Provider<ProfileRepository>(
   (ref) => ProfileRepository(ref.watch(apiClientProvider)),
 );
+final performanceRepositoryProvider = Provider<PerformanceRepository>(
+  (ref) => PerformanceRepository(ref.watch(apiClientProvider)),
+);
 
 final coursesProvider = FutureProvider.autoDispose<List<Course>>(
   (ref) => ref.watch(catalogRepositoryProvider).courses(),
@@ -42,9 +47,16 @@ final unitsProvider = FutureProvider.autoDispose<List<UnitItem>>(
 );
 
 final appointmentsProvider = FutureProvider.autoDispose
-    .family<List<Appointment>, AppointmentStatus?>(
-      (ref, status) =>
-          ref.watch(appointmentRepositoryProvider).list(status: status),
+    .family<List<Appointment>, AppointmentFilters>(
+      (ref, filters) =>
+          ref.watch(appointmentRepositoryProvider).list(filters: filters),
+    );
+
+final availabilityProvider = FutureProvider.autoDispose
+    .family<List<AvailableSlot>, AvailabilityQuery>(
+      (ref, query) => ref
+          .watch(appointmentRepositoryProvider)
+          .availability(courseId: query.courseId, date: query.date),
     );
 
 final pendingEvaluationsProvider =
@@ -76,4 +88,9 @@ final peopleProvider = FutureProvider.autoDispose
     .family<List<PersonSummary>, PeopleResource>(
       (ref, resource) =>
           ref.watch(managementRepositoryProvider).people(resource),
+    );
+
+final studentPerformanceProvider = FutureProvider.autoDispose
+    .family<List<StudentPerformance>, PerformanceQuery>(
+      (ref, query) => ref.watch(performanceRepositoryProvider).list(query),
     );

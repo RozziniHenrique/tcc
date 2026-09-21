@@ -7,6 +7,7 @@ import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/page_header.dart';
 import '../../../auth/data/models/authenticated_user.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
+import '../../../management/data/repositories/management_repository.dart';
 import '../../data/models/appointment.dart';
 
 class AppointmentsPage extends ConsumerStatefulWidget {
@@ -17,12 +18,13 @@ class AppointmentsPage extends ConsumerStatefulWidget {
 }
 
 class _AppointmentsPageState extends ConsumerState<AppointmentsPage> {
-  AppointmentStatus? _status;
+  AppointmentFilters _filters = const AppointmentFilters();
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider).value!;
-    final appointments = ref.watch(appointmentsProvider(_status));
+    final appointments = ref.watch(appointmentsProvider(_filters));
+    final employee = user.hasProfile(UserProfile.employee);
 
     return PageBody(
       child: Column(
@@ -33,16 +35,12 @@ class _AppointmentsPageState extends ConsumerState<AppointmentsPage> {
             subtitle: user.hasProfile(UserProfile.employee)
                 ? 'Consulte e acompanhe a agenda da operação.'
                 : 'Acompanhe seus horários e atendimentos.',
-            action: DropdownButton<AppointmentStatus?>(
-              value: _status,
-              hint: const Text('Todos os status'),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('Todos')),
-                for (final status in AppointmentStatus.values)
-                  DropdownMenuItem(value: status, child: Text(status.label)),
-              ],
-              onChanged: (value) => setState(() => _status = value),
-            ),
+          ),
+          const SizedBox(height: 16),
+          _FiltersCard(
+            filters: _filters,
+            employee: employee,
+            onChanged: (value) => setState(() => _filters = value),
           ),
           const SizedBox(height: 24),
           appointments.when(
@@ -50,7 +48,7 @@ class _AppointmentsPageState extends ConsumerState<AppointmentsPage> {
             error: (error, _) => _MessageCard(
               message: ApiException.messageFor(error),
               action: TextButton(
-                onPressed: () => ref.invalidate(appointmentsProvider(_status)),
+                onPressed: () => ref.invalidate(appointmentsProvider(_filters)),
                 child: const Text('Tentar novamente'),
               ),
             ),
@@ -66,6 +64,185 @@ class _AppointmentsPageState extends ConsumerState<AppointmentsPage> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _FiltersCard extends ConsumerWidget {
+  const _FiltersCard({
+    required this.filters,
+    required this.employee,
+    required this.onChanged,
+  });
+
+  final AppointmentFilters filters;
+  final bool employee;
+  final ValueChanged<AppointmentFilters> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final courses = employee ? ref.watch(coursesProvider) : null;
+    final units = employee ? ref.watch(unitsProvider) : null;
+    final students = employee
+        ? ref.watch(peopleProvider(PeopleResource.students))
+        : null;
+    final clients = employee
+        ? ref.watch(peopleProvider(PeopleResource.clients))
+        : null;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                SizedBox(
+                  width: 210,
+                  child: DropdownButtonFormField<AppointmentStatus>(
+                    initialValue: filters.status,
+                    decoration: const InputDecoration(labelText: 'Status'),
+                    items: [
+                      for (final status in AppointmentStatus.values)
+                        DropdownMenuItem(
+                          value: status,
+                          child: Text(status.label),
+                        ),
+                    ],
+                    onChanged: (value) => onChanged(
+                      filters.copyWith(
+                        status: value,
+                        clearStatus: value == null,
+                      ),
+                    ),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _pickPeriod(context),
+                  icon: const Icon(Icons.date_range_outlined),
+                  label: Text(
+                    filters.start == null || filters.end == null
+                        ? 'Selecionar período'
+                        : '${formatDate(filters.start!)} – '
+                              '${formatDate(filters.end!)}',
+                  ),
+                ),
+                if (employee) ...[
+                  _AsyncDropdown(
+                    label: 'Curso',
+                    value: filters.courseId,
+                    items: courses?.value
+                        ?.map((item) => _FilterItem(item.id, item.name))
+                        .toList(),
+                    onChanged: (value) => onChanged(
+                      filters.copyWith(
+                        courseId: value,
+                        clearCourse: value == null,
+                      ),
+                    ),
+                  ),
+                  _AsyncDropdown(
+                    label: 'Unidade',
+                    value: filters.unitId,
+                    items: units?.value
+                        ?.map((item) => _FilterItem(item.id, item.name))
+                        .toList(),
+                    onChanged: (value) => onChanged(
+                      filters.copyWith(unitId: value, clearUnit: value == null),
+                    ),
+                  ),
+                  _AsyncDropdown(
+                    label: 'Aluno',
+                    value: filters.studentId,
+                    items: students?.value
+                        ?.map((item) => _FilterItem(item.id, item.name))
+                        .toList(),
+                    onChanged: (value) => onChanged(
+                      filters.copyWith(
+                        studentId: value,
+                        clearStudent: value == null,
+                      ),
+                    ),
+                  ),
+                  _AsyncDropdown(
+                    label: 'Cliente',
+                    value: filters.clientId,
+                    items: clients?.value
+                        ?.map((item) => _FilterItem(item.id, item.name))
+                        .toList(),
+                    onChanged: (value) => onChanged(
+                      filters.copyWith(
+                        clientId: value,
+                        clearClient: value == null,
+                      ),
+                    ),
+                  ),
+                ],
+                TextButton.icon(
+                  onPressed: () => onChanged(const AppointmentFilters()),
+                  icon: const Icon(Icons.filter_alt_off_outlined),
+                  label: const Text('Limpar filtros'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickPeriod(BuildContext context) async {
+    final now = DateTime.now();
+    final result = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: now.add(const Duration(days: 730)),
+      initialDateRange: filters.start == null || filters.end == null
+          ? null
+          : DateTimeRange(start: filters.start!, end: filters.end!),
+    );
+    if (result != null) {
+      onChanged(filters.copyWith(start: result.start, end: result.end));
+    }
+  }
+}
+
+class _FilterItem {
+  const _FilterItem(this.id, this.label);
+  final int id;
+  final String label;
+}
+
+class _AsyncDropdown extends StatelessWidget {
+  const _AsyncDropdown({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int? value;
+  final List<_FilterItem>? items;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 210,
+      child: DropdownButtonFormField<int>(
+        initialValue: value,
+        decoration: InputDecoration(labelText: label),
+        items: [
+          for (final item in items ?? const <_FilterItem>[])
+            DropdownMenuItem(value: item.id, child: Text(item.label)),
+        ],
+        onChanged: items == null ? null : onChanged,
       ),
     );
   }
